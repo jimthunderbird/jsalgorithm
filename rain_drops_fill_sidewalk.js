@@ -2,6 +2,14 @@
  * The sidewalk is 1m long, rain drop is 1cm each
  * find out how many rain drops will fill the sidewalk
  * Time Complexity: O(N) --- N is the number of raindrops
+ *
+ * Idea:
+ * 1. Divide the sidewalk into 100 slots
+ * 2. Each slot has a dryStartPos and a dryEndPos
+ * 3. When a rain drop falls, update the current slot dryEndPos and the possible next slot's dryStartPos
+ * 4. If the current slot's dryEndPos - dryStartPos <= a delta (for example: 0.05), increment the number of filled slots
+ * 5. If the next slot's dryEndPos - dryStartPos <= a delta (for example: 0.05), increment the number of filled slots
+ * 6. The slidewalk is considered filled when the number of filled slots is 100
  */
 
 class RainDrop {
@@ -107,4 +115,5 @@ function getTotalNumberOfRainDropsUntilFilled(sidewalk) {
   return sidewalk.getNumOfRainDrops();
 }
 
-console.log(getTotalNumberOfRainDropsUntilFilled(new SideWalk()));
+const sidewalk = new SideWalk();
+console.log(getTotalNumberOfRainDropsUntilFilled(sidewalk));
