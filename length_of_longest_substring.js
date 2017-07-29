@@ -4,22 +4,22 @@
 class Solution {
   lengthOfLongestSubstring(s) {
     let maxLength = 0;
-    let curLength = 0;
-    let hash = {};
+    let charIndexMap = {};
+    let startIndex = 0;
+    let endIndex = 0;
     for (let i = 0; i < s.length; i += 1) {
-
       const c = s[i];
 
-      if (hash[c] === undefined) {
-        hash[c] = 1;
-        curLength += 1;
+      if (charIndexMap[c] === undefined) {
+        endIndex = i;
       } else {
-        hash = {};
-        hash[c] = 1;
-        curLength = 1;
+        startIndex = charIndexMap[c] + 1;
       }
 
-      if (curLength > maxLength) {
+      charIndexMap[c] = i;
+
+      const curLength = endIndex - startIndex + 1;
+      if ( curLength > maxLength) {
         maxLength = curLength;
       }
     }
@@ -30,7 +30,7 @@ class Solution {
 
 const solution = new Solution();
 
-const testStrs = ['abcabcbb','bbbbb','pwwkew','ababcde'];
+const testStrs = ['abcabcbb','bbbbb','pwwkew','ababcde','abcdeakj','abcbd'];
 
 testStrs.forEach( (s) => {
   console.log(solution.lengthOfLongestSubstring(s));
