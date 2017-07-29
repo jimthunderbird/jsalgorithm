@@ -6,22 +6,17 @@ class Solution {
     let maxLength = 0;
     let charIndexMap = {};
     let startIndex = 0;
-    let endIndex = 0;
-    for (let i = 0; i < s.length; i += 1) {
+    let strLength = s.length;
+    for (let i = 0; i < strLength; i += 1) {
       const c = s[i];
 
-      if (charIndexMap[c] === undefined) {
-        endIndex = i;
-      } else {
-        startIndex = charIndexMap[c] + 1;
+      if (charIndexMap[c] !== undefined) {
+        startIndex = Math.max(startIndex, charIndexMap[c] + 1);
       }
 
       charIndexMap[c] = i;
 
-      const curLength = endIndex - startIndex + 1;
-      if ( curLength > maxLength) {
-        maxLength = curLength;
-      }
+      maxLength = Math.max(maxLength, i - startIndex + 1);
     }
 
     return maxLength;
@@ -30,7 +25,9 @@ class Solution {
 
 const solution = new Solution();
 
-const testStrs = ['abcabcbb','bbbbb','pwwkew','ababcde','abcdeakj','abcbd'];
+const testStrs = [
+  'abcabcbb',
+];
 
 testStrs.forEach( (s) => {
   console.log(solution.lengthOfLongestSubstring(s));
