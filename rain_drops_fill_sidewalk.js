@@ -29,7 +29,7 @@ class RainDrop {
 class SideWalk {
   constructor() {
     //we just want the difference of the delta is small enough to consider "filled"
-    this.delta = 0.05;
+    this.delta = 0.01;
     this.numOfRainDrops = 0;
     this.numOfFilledSlots = 0;
     this.slots = [];
