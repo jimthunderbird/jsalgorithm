@@ -1,6 +1,6 @@
 /**
  * Algorithm summary:
- * There will be a game tree representing each move action (node)
+ * There will be a game tree representing move actions (node)
  * To simplify the solution generate, each node will have one or many moves
  */
 
@@ -40,69 +40,37 @@ class SoloChessBoard {
       if (i === 0) { //this is the root node
         level = 1;
       } else {
-        //shuffle existing nodes
-        nodes = shuffleArr(nodes);
+        //randomly select a node
+        const selectedNode = nodes[Math.floor(Math.random() * nodes.length)];
         //now the first one is a random existing node
         //now we can randomly decide whether treat it as a parent node or sibling node
-        let treatAsParent = Math.round(Math.random());
+        let treatAsSibling = Math.round(Math.random());
 
-        //this existing capture is at the bottom of the tree
-        //we can only make it as a sibling capture
-        if (nodes[0].level === depth) {
-          treatAsParent = 1;
+        //this existing node is at the bottom of the tree
+        //or has the parent node
+        //we can only make it as a sibling node
+        if (selectedNode.level === depth) {
+          treatAsSibling = 1;
         }
 
-        if (treatAsParent) { //this is a parent node
-          parentId = nodes[0].parentId;
-          level = nodes[0].level;
-        } else { //this is a sibling node
-          parentId = nodes[0].id;
-          level = nodes[0].level + 1;
+        if (treatAsSibling && selectedNode.parentId) { //we can really treat it as a sibling node
+          parentId = selectedNode.parentId;
+          level = selectedNode.level;
+        } else { //this is a parent node
+          parentId = selectedNode.id;
+          level = selectedNode.level + 1;
         }
+        nodes[parentId].numOfChilds += 1;
       }
 
       const id = i;
       const node = {
         id: id,
         parentId: parentId,
-        level: level
+        level: level,
+        numOfChilds: 0
       };
       nodes.push(node);
-    }
-
-    //now sort the nodes by level in ascending order
-    nodes.sort((nodeA, nodeB) => {
-      return nodeA.level - nodeB.level;
-    });
-
-    console.log(nodes);
-
-    for (let i = 0; i < size; i += 1) {
-      const node = nodes[i];
-      if (node.level === 1) { //this is the root node
-        this.generateFirstPiece();
-        node.moves = []; //the root node should not have any moves
-        node.square = this.firstOccupiedSquare;
-      } else {
-        const move = {
-          from: { //from square
-            row: 0,
-            col: 0
-          },
-          to: { //to square
-            row: 0,
-            col: 0
-          }
-        };
-        if (node.level === 2) {
-          //the nodes are in second level, place a piece around the first occupied square
-          node.piece = this.getRandomPiece();
-          this.placePieceAroundSquare(node.piece, this.firstOccupiedSquare.row, this.firstOccupiedSquare.col);
-        } else {
-          //for captures in other levels,
-        }
-
-      }
     }
 
     return nodes;
@@ -205,9 +173,9 @@ class SoloChessBoard {
   }
 
   /**
-   * place a piece around a target square
+   * place a piece around target squares
    */
-  placePieceAroundSquare(piece, targetRow, targetCol) {
+  placePieceAroundSquares(targetSquares) {
     const result = {};
     result.success = false;
     //the fromPiece will occupy target square after the capture
@@ -244,6 +212,41 @@ class SoloChessBoard {
 
     //generate the game tree, with levels ranging from 1 (the root node) to gameTreeDepth
     const nodes = this.generateGameTree(gameTreeSize, gameTreeDepth);
+
+    //now find out all the leaf nodes
+    const leafNodes = shuffleArr(nodes.filter((node) => {
+      return node.numOfChilds === 0;
+    }));
+
+    //generate the first piece
+    this.generateFirstPiece();
+
+    leafNodes.forEach((node) => {
+      /*
+      if (node.level === 1) { //this is the root node
+        this.generateFirstPiece();
+        node.moves = []; //the root node should not have any moves
+        node.square = this.firstOccupiedSquare;
+      } else {
+        const move = {
+          from: { //from square
+            row: 0,
+            col: 0
+          },
+          to: { //to square
+            row: 0,
+            col: 0
+          }
+        };
+        if (node.level === 2) {
+      //the nodes are in second level, place a piece around the first occupied square
+          node.piece = this.getRandomPiece();
+          this.placePieceAroundSquare(node.piece, this.firstOccupiedSquare.row, this.firstOccupiedSquare.col);
+        } else {
+      //for captures in other levels,
+        }
+        */
+    });
   }
 
   print() {
