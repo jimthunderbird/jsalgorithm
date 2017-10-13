@@ -295,17 +295,17 @@ class SoloChessBoard {
     const gameTreeDepth = maxCapturesPerPiece + 1;
     const gameTreeSize = this.numOfPieces; //for N pieces, we will have N nodes in the game tree
 
-    //try maximum 3000 times
+    //try maximum 1000000 times
     let solution;
-    for (let t = 1; t <= 3000; t += 1) {
+    for (let t = 1; t <= 100000; t += 1) {
       solution = {};
       solution.captures = [];
 
       this.hasKing = Math.round(Math.random()); //will this solution contains king?
       if (this.hasKing) {
-        this.availablePcs = [PAWN, KNIGHT, BISHOP, ROOK, QUEEN, KING];
+        this.availablePcs = [KNIGHT, KING, QUEEN, PAWN, ROOK, BISHOP];
       } else {
-        this.availablePcs = [PAWN, KNIGHT, BISHOP, ROOK, QUEEN];
+        this.availablePcs = [KNIGHT, QUEEN, PAWN, ROOK, BISHOP];
       }
 
       this.numOfPiecesOnBoard = 0;
@@ -399,4 +399,4 @@ function generatePosition(numOfPieces) {
 }
 
 /////////////////////// Main ///////////////////////////
-generatePosition(16);
+generatePosition(12);
