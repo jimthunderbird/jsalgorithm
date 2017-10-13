@@ -188,8 +188,7 @@ class SoloChessBoard {
     const piece = this.getRandomPiece();
     this.firstOccupiedSquare = { row, col };
     this.addPieceOnSquare(piece, row, col);
-    //also, we add the piece to the root node of the game tree
-    this.gameTreeNodes[0].piece = piece;
+    return { piece, row, col };
   }
 
   /**
@@ -239,7 +238,9 @@ class SoloChessBoard {
     }));
 
     //generate the first piece
-    this.generateFirstPiece();
+    const result = this.generateFirstPiece();
+    //also, we add the piece to the root node of the game tree
+    this.gameTreeNodes[0].piece = result.piece;
 
     leafNodes.forEach((node) => {
       node.piece = this.getRandomPiece();
