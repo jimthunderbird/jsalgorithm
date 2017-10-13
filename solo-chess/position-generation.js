@@ -290,51 +290,57 @@ class SoloChessBoard {
   }
 
   generateSolution() {
-    const solution = {};
-    solution.captures = [];
+    //try maximum 100 times
+    let solution;
+    for (let t = 1; t <= 100; t += 1) {
+      solution = {};
+      solution.captures = [];
 
-    const maxCapturesPerPiece = 2;
-    const gameTreeDepth = maxCapturesPerPiece + 1;
-    const gameTreeSize = this.numOfPieces; //for N pieces, we will have N nodes in the game tree
+      const maxCapturesPerPiece = 2;
+      const gameTreeDepth = maxCapturesPerPiece + 1;
+      const gameTreeSize = this.numOfPieces; //for N pieces, we will have N nodes in the game tree
 
-    this.hasKing = Math.round(Math.random()); //will this solution contains king?
-    if (this.hasKing) {
-      this.availablePcs = [PAWN, KNIGHT, BISHOP, ROOK, QUEEN, KING];
-    } else {
-      this.availablePcs = [PAWN, KNIGHT, BISHOP, ROOK, QUEEN];
-    }
-
-    this.numOfPiecesOnBoard = 0;
-
-    //generate the game tree, with levels ranging from 1 (the root node) to gameTreeDepth
-    this.gameTreeNodes = this.generateGameTree(gameTreeSize, gameTreeDepth);
-
-    //now find out all the leaf nodes, they are the nodes that launch captures
-    const leafNodes = this.gameTreeNodes.filter((node) => {
-      return node.numOfChilds === 0;
-    });
-
-    //generate the first piece
-    const { piece, square } = this.generateFirstPiece();
-    //also, we add the piece to the root node of the game tree
-    this.gameTreeNodes[0].piece = piece;
-    this.gameTreeNodes[0].square = square;
-
-    leafNodes.forEach((leafNode, index) => {
-      leafNode.isLastNode = false;
-      if (index === leafNodes.length - 1) {
-        leafNode.isLastNode = true;
+      this.hasKing = Math.round(Math.random()); //will this solution contains king?
+      if (this.hasKing) {
+        this.availablePcs = [PAWN, KNIGHT, BISHOP, ROOK, QUEEN, KING];
+      } else {
+        this.availablePcs = [PAWN, KNIGHT, BISHOP, ROOK, QUEEN];
       }
 
-      solution.captures = solution.captures.concat(this.generateCapturesForLeafNode(leafNode));
-    });
+      this.numOfPiecesOnBoard = 0;
 
-    if (solution.captures.length > 0 && this.numOfPiecesOnBoard === this.numOfPieces) {
-      solution.valid = true;
-      console.log('found solution');
-      console.log(solution.captures);
-    } else {
-      solution.valid = false;
+      //generate the game tree, with levels ranging from 1 (the root node) to gameTreeDepth
+      this.gameTreeNodes = this.generateGameTree(gameTreeSize, gameTreeDepth);
+
+      //now find out all the leaf nodes, they are the nodes that launch captures
+      const leafNodes = this.gameTreeNodes.filter((node) => {
+        return node.numOfChilds === 0;
+      });
+
+      //generate the first piece
+      const { piece, square } = this.generateFirstPiece();
+      //also, we add the piece to the root node of the game tree
+      this.gameTreeNodes[0].piece = piece;
+      this.gameTreeNodes[0].square = square;
+
+      leafNodes.forEach((leafNode, index) => {
+        leafNode.isLastNode = false;
+        if (index === leafNodes.length - 1) {
+          leafNode.isLastNode = true;
+        }
+
+        solution.captures = solution.captures.concat(this.generateCapturesForLeafNode(leafNode));
+      });
+
+      if (solution.captures.length > 0 && this.numOfPiecesOnBoard === this.numOfPieces) {
+        solution.valid = true;
+        console.log('found solution');
+        console.log(solution.captures);
+        console.log(t);
+        break;
+      } else {
+        solution.valid = false;
+      }
     }
 
     return solution;
@@ -392,4 +398,4 @@ function generatePosition(numOfPieces) {
 }
 
 /////////////////////// Main ///////////////////////////
-generatePosition(4);
+generatePosition(5);
