@@ -77,9 +77,9 @@ class SoloChessBoard {
   }
 
   /**
-   * get incoming captue squares around a target square
+   * get incoming captue squares of a piece around a specific square
    */
-  getIncomingCaptureSquares(piece, targetRow, targetCol) {
+  getIncomingCaptureSquares(piece, row, col) {
     const squares = [];
 
     //use the target square as the origin, we will have the coordinates
@@ -115,8 +115,8 @@ class SoloChessBoard {
 
     for (let ci = 0; ci < coordinates.length; ci += 1) {
       const coord = coordinates[ci];
-      const r = targetRow + coord[0];
-      const c = targetCol + coord[1];
+      const r = row + coord[0];
+      const c = col + coord[1];
       //make sure:
       //this coordinate is inside the board
       //this coordinate is not occupied yet
@@ -131,8 +131,8 @@ class SoloChessBoard {
         !(piece === PAWN && r < 2)) {
         if (affectedCoordinates.length > 0) {
           const affectedCoord = affectedCoordinates[ci];
-          const ar = targetRow + affectedCoord[0];
-          const ac = targetCol + affectedCoord[1];
+          const ar = row + affectedCoord[0];
+          const ac = col + affectedCoord[1];
           if (this.board[ar][ac] === '-') {
             square.affectedRow = ar;
             square.affectedCol = ac;
@@ -153,6 +153,24 @@ class SoloChessBoard {
     return squares;
   }
 
+  /**
+   * get path nodes of a specific node
+   */
+  getNodesInPathOf(node) {
+    const nodes = [];
+    let curNode = node;
+    while (curNode.parentId) {
+      nodes.unshift(this.gameTreeNodes[node.parentId]);
+      curNode = this.gameTreeNodes[curNode.parentId];
+    }
+    //add the root node
+    nodes.unshift(this.gameTreeNodes[0]);
+    return nodes;
+  }
+
+  /**
+   * get a random piece
+   */
   getRandomPiece() {
     return this.availablePcs[Math.floor(Math.random() * this.availablePcs.length)];
   }
@@ -170,51 +188,53 @@ class SoloChessBoard {
     const piece = this.getRandomPiece();
     this.firstOccupiedSquare = { row, col };
     this.addPieceOnSquare(piece, row, col);
+    //also, we add the piece to the root node of the game tree
+    this.gameTreeNodes[0].piece = piece;
   }
 
   /**
-   * place a piece around target squares
+   * place a piece around a specific square
    */
-  placePieceAroundSquares(targetSquares) {
+  placePieceAroundSquare(piece, row, col) {
     const result = {};
     result.success = false;
-    //the fromPiece will occupy target square after the capture
-    const possibleFromSquares = this.getIncomingCaptureSquares(piece, targetRow, targetCol);
-    if (possibleFromSquares.length === 0) {
+    //this piece will occupy target square after the capture
+    const availableSquares = this.getIncomingCaptureSquares(piece, row, col);
+    if (availableSquares.length === 0) {
       //no more squares to choose
       result.success = false;
       return result;
     }
     //now we need to find a square to place the fromPiece
-    const square = possibleFromSquares[
-      Math.floor(Math.random() * possibleFromSquares.length)
+    const square = availableSquares[
+      Math.floor(Math.random() * availableSquares.length)
     ];
 
-    const row = square.row;
-    const col = square.col;
-
-    this.board[row][col] = piece;
+    this.board[square.row][square.col] = piece;
 
     if ('affectedRow' in square && 'affectedCol' in square) {
       this.board[square.affectedRow][square.affectedCol] = '*';
     }
 
-    result.row = row;
-    result.col = col;
+    result.row = square.row;
+    result.col = square.col;
     result.success = true;
     return result;
   }
 
   generateSolution() {
+    const solution = {};
+    solution.captures = [];
+
     const maxCapturesPerPiece = 2;
     const gameTreeDepth = maxCapturesPerPiece + 1;
     const gameTreeSize = this.numOfPieces; //for N pieces, we will have N nodes in the game tree
 
     //generate the game tree, with levels ranging from 1 (the root node) to gameTreeDepth
-    const nodes = this.generateGameTree(gameTreeSize, gameTreeDepth);
+    this.gameTreeNodes = this.generateGameTree(gameTreeSize, gameTreeDepth);
 
-    //now find out all the leaf nodes
-    const leafNodes = shuffleArr(nodes.filter((node) => {
+    //now find out all the leaf nodes, they are the nodes that launch captures
+    const leafNodes = shuffleArr(this.gameTreeNodes.filter((node) => {
       return node.numOfChilds === 0;
     }));
 
@@ -222,6 +242,11 @@ class SoloChessBoard {
     this.generateFirstPiece();
 
     leafNodes.forEach((node) => {
+      node.piece = this.getRandomPiece();
+      //all leaf nodes should eventually capture the first occupied square
+      this.placePieceAroundSquare(node.piece, this.firstOccupiedSquare.row, this.firstOccupiedSquare.col);
+      console.log(node);
+      console.log(this.getNodesInPathOf(node));
       /*
       if (node.level === 1) { //this is the root node
         this.generateFirstPiece();
@@ -247,6 +272,8 @@ class SoloChessBoard {
         }
         */
     });
+
+    return solution;
   }
 
   print() {
