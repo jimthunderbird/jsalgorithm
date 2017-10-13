@@ -54,6 +54,9 @@ class SoloChessBoard {
         level: level,
         numOfChilds: 0
       };
+      if (parentId !== null) {
+        node.parentNode = nodes[parentId];
+      }
       nodes.push(node);
     }
 
@@ -165,6 +168,8 @@ class SoloChessBoard {
     }
     //add the root node
     nodes.unshift(this.gameTreeNodes[0]);
+    //finally add this node to the end
+    nodes.push(node);
     return nodes;
   }
 
@@ -177,6 +182,7 @@ class SoloChessBoard {
 
   addPieceOnSquare(piece, square) {
     this.board[square.row][square.col] = piece;
+    this.numOfPiecesOnBoard += 1;
   }
 
   /**
@@ -190,6 +196,89 @@ class SoloChessBoard {
     this.addPieceOnSquare(piece, this.firstOccupiedSquare);
     const square = { row, col };
     return { piece, square };
+  }
+
+  /**
+   * generate a piece for node
+   */
+  generatePieceForNode(node) {
+    if (node.id > 0) { //only generate piece for non-root nodes
+      //the last node must be a king
+      if (node.isLastNode && this.hasKing) {
+        node.piece = KING;
+      } else {
+        node.piece = this.getRandomPiece();
+      }
+    }
+  }
+
+  /**
+   * given squares A and squares B
+   * find the common squares that are in both A and B
+   */
+  getCommonSquares(squaresA, squaresB) {
+    const squares = [];
+    //build a hash for squaresA
+    const squaresAHash = {};
+    squaresA.forEach((square) => {
+      const key = `${square.row}${square.col}`;
+      squaresAHash[key] = square;
+    });
+    //see what square in squaresB exists in squaresAHash
+    squaresB.forEach((square) => {
+      const key = `${square.row}${square.col}`;
+      if (squaresAHash[key] !== undefined) {
+        squares.push(square);
+      }
+    });
+    return squares;
+  }
+
+  /**
+   * generate captures from a leaf node to the root node
+   */
+  generateCapturesForLeafNode(leafNode) {
+    const captures = [];
+
+    const nodesInPath = this.getNodesInPathOf(leafNode);
+
+    let fromNode;
+    let toNode;
+    let commonSquares = [];
+    for (let i = 0; i < nodesInPath.length - 1; i += 1) {
+      toNode = nodesInPath[i];
+      this.generatePieceForNode(toNode);
+      for (let j = i + 1; j < nodesInPath.length; j += 1) {
+        fromNode = nodesInPath[j];
+        this.generatePieceForNode(fromNode);
+
+        const availableSquares = this.getAvailableSourceSquaresForPlacement(fromNode.piece, toNode.square);
+        fromNode.square = availableSquares[Math.floor(Math.random() * availableSquares.length)];
+        if (j === 1) {
+          commonSquares = availableSquares;
+        } else {
+          commonSquares = this.getCommonSquares(commonSquares, availableSquares);
+        }
+      }
+    }
+
+    if (commonSquares.length > 0) {
+      //there are common squares available, this is a good capture!
+      //now add the piece on square, no need to add for root node
+      for (let i = 1; i < nodesInPath.length; i += 1) {
+        this.addPieceOnSquare(nodesInPath[i].piece, nodesInPath[i].square);
+      }
+
+      for (let i = nodesInPath.length - 1; i >= 1; i -= 1) {
+        const capture = {
+          piece: leafNode.piece,
+          from: nodesInPath[i].square,
+          to: nodesInPath[i].parentNode.square
+        }
+        captures.push(capture);
+      }
+    }
+    return captures;
   }
 
   /**
@@ -238,6 +327,8 @@ class SoloChessBoard {
       this.availablePcs = [PAWN, KNIGHT, BISHOP, ROOK, QUEEN];
     }
 
+    this.numOfPiecesOnBoard = 0;
+
     //generate the game tree, with levels ranging from 1 (the root node) to gameTreeDepth
     this.gameTreeNodes = this.generateGameTree(gameTreeSize, gameTreeDepth);
 
@@ -253,68 +344,21 @@ class SoloChessBoard {
     this.gameTreeNodes[0].square = square;
 
     leafNodes.forEach((leafNode, index) => {
-      let isLastNode = false;
+      leafNode.isLastNode = false;
       if (index === leafNodes.length - 1) {
-        isLastNode = true;
+        leafNode.isLastNode = true;
       }
 
-      const nodesInPath = this.getNodesInPathOf(leafNode);
-
-      for (;;) {
-        let isCaptureValid = true;
-        //special rule, the last one to stay must be king
-        if (this.hasKing && isLastNode) {
-          leafNode.piece = KING;
-        } else {
-          leafNode.piece = this.getRandomPiece();
-        }
-
-        //we need to make sure we can place piece around all path node squares
-        nodesInPath.forEach((pathNode) => {
-          if (pathNode.parentId !== null) { //make sure this is a non-root node
-            pathNode.piece = this.getRandomPiece();
-            const placementResult = this.placePieceAroundSquare(
-              pathNode.piece,
-              this.gameTreeNodes[pathNode.parentId].square
-            );
-            //set the node's square
-            if (placementResult.square) {
-              pathNode.square = placementResult.square;
-            }
-            isCaptureValid = isCaptureValid && placementResult.success;
-          }
-        });
-
-        if (isCaptureValid) {
-          break;
-        }
-      }
-
-      /*
-      if (node.level === 1) { //this is the root node
-        this.generateFirstPiece();
-        node.moves = []; //the root node should not have any moves
-        node.square = this.firstOccupiedSquare;
-      } else {
-        const move = {
-          from: { //from square
-            row: 0,
-            col: 0
-          },
-          to: { //to square
-            row: 0,
-            col: 0
-          }
-        };
-        if (node.level === 2) {
-      //the nodes are in second level, place a piece around the first occupied square
-          node.piece = this.getRandomPiece();
-          this.placePieceAroundSquare(node.piece, this.firstOccupiedSquare.row, this.firstOccupiedSquare.col);
-        } else {
-      //for captures in other levels,
-        }
-        */
+      solution.captures = solution.captures.concat(this.generateCapturesForLeafNode(leafNode));
     });
+
+    if (solution.captures.length > 0 && this.numOfPiecesOnBoard === this.numOfPieces) {
+      solution.valid = true;
+      console.log('found solution');
+      console.log(solution.captures);
+    } else {
+      solution.valid = false;
+    }
 
     return solution;
   }
@@ -371,4 +415,4 @@ function generatePosition(numOfPieces) {
 }
 
 /////////////////////// Main ///////////////////////////
-generatePosition(16);
+generatePosition(4);
