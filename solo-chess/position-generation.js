@@ -127,6 +127,7 @@ class SoloChessBoard {
       //do not block a bishop
       let squareIsValid = false;
       const resultSquare = {};
+      resultSquare.affectedSquares = [];
 
       if ((r >= 0 && r <= 7) &&
         (c >= 0 && c <= 7) &&
@@ -139,6 +140,10 @@ class SoloChessBoard {
           if (this.board[ar][ac] === '-') {
             resultSquare.affectedRow = ar;
             resultSquare.affectedCol = ac;
+            resultSquare.affectedSquares.push({
+              row: ar,
+              col: ac
+            });
             squareIsValid = true;
           }
         } else {
@@ -267,6 +272,9 @@ class SoloChessBoard {
       //now add the piece on square, no need to add for root node
       for (let i = 1; i < nodesInPath.length; i += 1) {
         this.addPieceOnSquare(nodesInPath[i].piece, nodesInPath[i].square);
+        nodesInPath[i].square.affectedSquares.forEach((square) => {
+          this.board[square.row][square.col] = '*';
+        });
       }
 
       for (let i = nodesInPath.length - 1; i >= 1; i -= 1) {
@@ -279,37 +287,6 @@ class SoloChessBoard {
       }
     }
     return captures;
-  }
-
-  /**
-   * place a piece around a specific square
-   */
-  placePieceAroundSquare(piece, square) {
-    const row = square.row;
-    const col = square.col;
-    const result = {};
-    result.success = false;
-    //this piece will occupy target square after the capture
-    const availableSquares = this.getAvailableSourceSquaresForPlacement(piece, {row, col});
-    if (availableSquares.length === 0) {
-      //no more squares to choose
-      result.success = false;
-      return result;
-    }
-    //now we need to find a square to place the fromPiece
-    const selectedSquare = availableSquares[
-      Math.floor(Math.random() * availableSquares.length)
-    ];
-
-    this.board[selectedSquare.row][selectedSquare.col] = piece;
-
-    if ('affectedRow' in square && 'affectedCol' in square) {
-      this.board[square.affectedRow][square.affectedCol] = '*';
-    }
-
-    result.square = selectedSquare;
-    result.success = true;
-    return result;
   }
 
   generateSolution() {
