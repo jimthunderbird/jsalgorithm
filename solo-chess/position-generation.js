@@ -94,9 +94,6 @@ class SoloChessBoard {
       ];
     } else if (piece === BISHOP) { //bishop has 4 possible moves
       coordinates = [
-        [2, 2], [2, -2], [-2, 2], [-2, -2]
-      ];
-      affectedCoordinates = [ //each move will affect one square in the diagonal
         [1, 1], [1, -1], [-1, 1], [-1, -1]
       ];
     } else if (piece === ROOK) { //root has 4 possible moves
@@ -399,4 +396,4 @@ function generatePosition(numOfPieces) {
 }
 
 /////////////////////// Main ///////////////////////////
-generatePosition(12);
+generatePosition(16);
