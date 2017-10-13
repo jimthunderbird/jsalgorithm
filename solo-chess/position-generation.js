@@ -7,7 +7,6 @@ class SoloChessBoard {
 
   constructor(numOfPieces) {
     this.numOfPieces = numOfPieces;
-    this.board = this.getEmptyBoard();
   }
 
   /**
@@ -256,9 +255,11 @@ class SoloChessBoard {
       for (let j = i + 1; j < nodesInPath.length; j += 1) {
         fromNode = nodesInPath[j];
         this.generatePieceForNode(fromNode);
-
-        const availableSquares = this.getAvailableSourceSquaresForPlacement(fromNode.piece, toNode.square);
-        fromNode.square = availableSquares[Math.floor(Math.random() * availableSquares.length)];
+        let availableSquares = [];
+        if (toNode.square) {
+          availableSquares = this.getAvailableSourceSquaresForPlacement(fromNode.piece, toNode.square);
+          fromNode.square = availableSquares[Math.floor(Math.random() * availableSquares.length)];
+        }
         if (j === 1) {
           commonSquares = availableSquares;
         } else {
@@ -308,7 +309,7 @@ class SoloChessBoard {
       }
 
       this.numOfPiecesOnBoard = 0;
-
+      this.board = this.getEmptyBoard();
       //generate the game tree, with levels ranging from 1 (the root node) to gameTreeDepth
       this.gameTreeNodes = this.generateGameTree(gameTreeSize, gameTreeDepth);
 
