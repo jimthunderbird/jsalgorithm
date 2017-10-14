@@ -84,38 +84,52 @@ class SoloChessBoard {
 
     const squares = [];
 
-    //use the target square as the origin, we will have the coordinates
-    let coordinates;
-    let affectedCoordinates = [];
-
-    if (piece === PAWN) { //pawn can only move up
-      coordinates = [
+    const placementMap = {};
+    placementMap[PAWN] = {
+      baseDelta: [
         [-1, 0]
-      ];
-    } else if (piece === BISHOP) { //bishop has 4 possible moves
-      coordinates = [
+      ],
+      range: 1
+    };
+    placementMap[BISHOP] = {
+      baseDelta: [
         [1, 1], [1, -1], [-1, 1], [-1, -1]
-      ];
-    } else if (piece === ROOK) { //root has 4 possible moves
-      coordinates = [
+      ],
+      range: 8
+    };
+    placementMap[ROOK] = {
+      baseDelta: [
         [0, 1], [0, -1], [-1, 0], [1, 0]
-      ];
-    } else if (piece === KING || piece === QUEEN) { //king and queen has 8 possible moves
-      coordinates = [
+      ],
+      range: 8
+    };
+    placementMap[QUEEN] = {
+      baseDelta: [
         [0, 1], [1, 1], [1, 0], [1, -1],
         [0, -1], [-1, 1], [-1, 0], [-1, -1]
-      ];
-    } else if (piece === KNIGHT) { //knight has 8 possible moves
-      coordinates = [
+      ],
+      range: 8
+    };
+    placementMap[KING] = {
+      baseDelta: [
+        [0, 1], [1, 1], [1, 0], [1, -1],
+        [0, -1], [-1, 1], [-1, 0], [-1, -1]
+      ],
+      range: 1
+    };
+    placementMap[KNIGHT] = {
+      baseDelta: [
         [-1, 2], [-1, -2], [1, 2], [1, -2],
         [2, -1], [-2, -1], [2, 1], [-2, 1]
-      ];
-    }
+      ],
+      range: 1
+    };
 
-    for (let ci = 0; ci < coordinates.length; ci += 1) {
-      const coord = coordinates[ci];
-      const r = row + coord[0];
-      const c = col + coord[1];
+    const deltas = placementMap[piece].baseDelta;
+    for (let ci = 0; ci < deltas.length; ci += 1) {
+      const delta = deltas[ci];
+      const r = row + delta[0];
+      const c = col + delta[1];
       //make sure:
       //this coordinate is inside the board
       //this coordinate is not occupied yet
@@ -123,12 +137,12 @@ class SoloChessBoard {
       //do not block a bishop
       let squareIsValid = false;
       const resultSquare = {};
-      resultSquare.affectedSquares = [];
 
-      if ((r >= 0 && r <= 7) &&
-        (c >= 0 && c <= 7) &&
+      if ((r >= 1 && r <= 7) &&
+        (c >= 1 && c <= 7) &&
         this.board[r][c] === '-' &&
         !(piece === PAWN && r < 2)) {
+        /*
         if (affectedCoordinates.length > 0) {
           const affectedCoord = affectedCoordinates[ci];
           const ar = row + affectedCoord[0];
@@ -145,6 +159,8 @@ class SoloChessBoard {
         } else {
           squareIsValid = true;
         }
+        */
+        squareIsValid = true;
       }
 
       if (squareIsValid) {
@@ -270,9 +286,11 @@ class SoloChessBoard {
       //now add the piece on square, no need to add for root node
       for (let i = 1; i < nodesInPath.length; i += 1) {
         this.addPieceOnSquare(nodesInPath[i].piece, nodesInPath[i].square);
+        /*
         nodesInPath[i].square.affectedSquares.forEach((square) => {
           this.board[square.row][square.col] = '*';
         });
+        */
       }
 
       for (let i = nodesInPath.length - 1; i >= 1; i -= 1) {
@@ -393,7 +411,8 @@ function generatePosition(numOfPieces) {
   const board = new SoloChessBoard(numOfPieces);
   board.generateSolution();
   board.print();
+  console.log(board.firstOccupiedSquare);
 }
 
 /////////////////////// Main ///////////////////////////
-generatePosition(16);
+generatePosition(4);
