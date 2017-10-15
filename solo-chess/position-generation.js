@@ -300,11 +300,43 @@ class SoloChessBoard {
     return reachableSquares;
   }
 
+  getAffectedSquaresOnMove(from, to) {
+    const squares = [];
+    const range = this.placementMap[from.piece].range;
+    if (range > 1) {
+      const amplifier = Math.max(Math.abs(to.square.row - from.square.row), Math.abs(to.square.col - from.square.col));
+      let delta = [(from.square.row - to.square.row) / amplifier, (from.square.col - to.square.col) / amplifier];
+      let row = from.square.row;
+      let col = from.square.col;
+      for (;;) {
+        row -= delta[0];
+        col -= delta[1];
+        if (Math.abs(row - to.square.row) === 0 && Math.abs(col - to.square.col) === 0) {
+          break;
+        } else {
+          squares.push({row, col});
+        }
+      }
+    }
+    return squares;
+  }
+
   generateSolutionV2() {
+    const from = {
+      piece: 'Q',
+      square: {row: 3, col: 3}
+    };
     this.board = this.getEmptyBoard();
-    this.getReachableSquaresOfPiece('N', {row: 3, col: 3}).forEach((square) => {
+    this.board[from.square.row][from.square.col] = from.piece;
+    const reachableSquares = this.getReachableSquaresOfPiece(from.piece, from.square);
+    const targetSquare = reachableSquares[Math.floor(Math.random() * reachableSquares.length)];
+    const to = {
+      square: targetSquare
+    };
+    this.getAffectedSquaresOnMove(from, to).forEach((square) => {
       this.board[square.row][square.col] = '*';
     });
+    this.board[targetSquare.row][targetSquare.col] = '|';
     console.log(this.board);
   }
 
