@@ -128,8 +128,8 @@ class SoloChessBoard {
 
     const deltas = this.placementMap[piece].baseDelta;
     const range = this.placementMap[piece].range;
-    for (let ci = 0; ci < deltas.length; ci += 1) {
-      const delta = deltas[ci];
+    for (let i = 0; i < deltas.length; i += 1) {
+      const delta = deltas[i];
       for (let r = 1; r <= range; r += 1) {
         const row = square.row + delta[0] * r;
         const col = square.col + delta[1] * r;
@@ -145,30 +145,14 @@ class SoloChessBoard {
           (col >= 0 && col <= 7) &&
           this.board[row][col] === '-' &&
           !(piece === PAWN && r < 2)) {
-          /*
-        if (affectedCoordinates.length > 0) {
-          const affectedCoord = affectedCoordinates[ci];
-          const ar = row + affectedCoord[0];
-          const ac = col + affectedCoord[1];
-          if (this.board[ar][ac] === '-') {
-            resultSquare.affectedRow = ar;
-            resultSquare.affectedCol = ac;
-            resultSquare.affectedSquares.push({
-              row: ar,
-              col: ac
-            });
-            squareIsValid = true;
-          }
-        } else {
-          squareIsValid = true;
-        }
-        */
           squareIsValid = true;
         }
 
         if (squareIsValid) {
           resultSquare.row = row;
           resultSquare.col = col;
+          resultSquare.delta = deltas[i];
+          resultSquare.range = range;
           const key = `${row}${col}`;
           squaresHash[key] = resultSquare;
         }
@@ -176,6 +160,37 @@ class SoloChessBoard {
     }
 
     return Object.values(squaresHash);
+  }
+
+  /**
+   * place a piece around a specific square
+   */
+  placePieceAroundSquare(piece, square) {
+    const result = {};
+    const sourceSquares = this.getAvailableSourceSquaresForPlacement(piece, square);
+    if (sourceSquares.length === 0) {
+      result.success = false;
+      return result;
+    }
+    const sourceSquare = sourceSquares[Math.floor(Math.random() * sourceSquares.length)];
+    this.addPieceToSquare(piece, sourceSquare);
+    //now need to also add the affected squares
+    if (sourceSquare.range > 1) {
+      let row = sourceSquare.row;
+      let col = sourceSquare.col;
+      for (;;) {
+        row -= sourceSquare.delta[0];
+        col -= sourceSquare.delta[1];
+        if (Math.abs(row - square.row) === 0 && Math.abs(col - square.col) === 0) {
+          break;
+        } else {
+          this.addPieceToSquare('*', {row, col});
+        }
+      }
+    }
+    result.success = true;
+    result.square = sourceSquare;
+    return result;
   }
 
   /**
@@ -270,11 +285,6 @@ class SoloChessBoard {
   }
 
   generateSolution() {
-    this.board = this.getEmptyBoard();
-    this.numOfPiecesOnBoard = 0;
-    console.log(this.getAvailableSourceSquaresForPlacement('Q', {row: 0, col: 0}));
-    return;
-
     //try maximum 1000000 times
     let solution;
     for (let t = 1; t <= 100000; t += 1) {
