@@ -124,7 +124,7 @@ class SoloChessBoard {
 
   generateSolution() {
     let solution;
-    for (let t = 1; t <= 10000; t += 1) { //t means outer trys
+    for (let t = 1; t <= 1000; t += 1) { //t means outer trys
       solution = {};
       solution.captures = [];
 
@@ -138,9 +138,6 @@ class SoloChessBoard {
       } else {
         this.availablePcs = [KNIGHT, QUEEN, PAWN, ROOK, BISHOP];
       }
-
-      console.log(this.getAvailableSourceSquaresForPlacement('Q', {row: 3, col: 3}));
-      return;
 
       //randomly generate the rootSquare
       let rootSquare;
@@ -160,7 +157,7 @@ class SoloChessBoard {
 
       for (let i = 0; i < this.numOfPieces - 1; i += 1) {
         // the last piec to stay should be a king
-        for (let it = 1; it <= 200; it += 1) { //it means inner trys
+        for (let it = 1; it <= 150; it += 1) { //it means inner trys
           if (i === this.numOfPieces - 2 && this.hasKing) {
             piece = KING;
           } else {
@@ -168,22 +165,29 @@ class SoloChessBoard {
           }
           const result = this.placePieceAroundSquare(piece, rootSquare);
           if (result.success) {
+            //now generate the capture
+            solution.captures.push({
+              piece: piece,
+              from: result.square,
+              to: rootSquare
+            });
             break;
           }
         }
       }
 
       if (this.numOfPiecesOnBoard === this.numOfPieces) {
+        console.log('found solution');
+        solution.fen = arrToFen(this.board);
         break;
       }
     }
 
-    this.print();
-    return solution;
-  }
-
-  print() {
+    console.log(solution.captures.map((capture) => {
+      return `${capture.piece}:${capture.from.row}${capture.from.col}->${capture.to.row}${capture.to.col}`;
+    }));
     console.log(this.board);
+    return solution;
   }
 }
 
@@ -233,4 +237,4 @@ function generatePosition(numOfPieces) {
 }
 
 /////////////////////// Main ///////////////////////////
-generatePosition(16);
+generatePosition(6);
