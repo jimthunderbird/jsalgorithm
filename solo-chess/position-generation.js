@@ -186,7 +186,7 @@ class SoloChessBoard {
         if (Math.abs(row - square.row) === 0 && Math.abs(col - square.col) === 0) {
           break;
         } else {
-          this.addPieceToSquare('*', {row, col});
+          this.board[row][col] = '*';
         }
       }
     }
@@ -296,6 +296,9 @@ class SoloChessBoard {
         row: 8 - coordinate[1],
         col: coordinate.charCodeAt(0) - 97
       };
+    }).filter((coordinate) => {
+      //make sure this coordinate is not affected
+      return this.board[coordinate.row][coordinate.col] !== '*';
     });
     return reachableSquares;
   }
@@ -322,21 +325,39 @@ class SoloChessBoard {
   }
 
   generateSolutionV2() {
-    const from = {
-      piece: 'Q',
-      square: {row: 3, col: 3}
-    };
     this.board = this.getEmptyBoard();
-    this.board[from.square.row][from.square.col] = from.piece;
-    const reachableSquares = this.getReachableSquaresOfPiece(from.piece, from.square);
-    const targetSquare = reachableSquares[Math.floor(Math.random() * reachableSquares.length)];
-    const to = {
-      square: targetSquare
-    };
-    this.getAffectedSquaresOnMove(from, to).forEach((square) => {
-      this.board[square.row][square.col] = '*';
-    });
-    this.board[targetSquare.row][targetSquare.col] = '|';
+    this.numOfPiecesOnBoard = 0;
+
+    this.hasKing = true;
+
+    if (this.hasKing) {
+      this.availablePcs = [KNIGHT, KING, QUEEN, PAWN, ROOK, BISHOP];
+    } else {
+      this.availablePcs = [KNIGHT, QUEEN, PAWN, ROOK, BISHOP];
+    }
+
+    //randomly generate the rootSquare
+    const rootSquare = this.getRandomSquare()
+    const rootPiece = this.getRandomPiece();
+
+    this.addPieceToSquare(rootPiece, rootSquare);
+
+    let piece;
+
+    for (let i = 0; i < this.numOfPieces - 1; i += 1) {
+      for (let t = 1; t <= 100; t += 1) {
+        piece = this.getRandomPiece();
+        const result = this.placePieceAroundSquare(piece, rootSquare);
+        if (result.success) {
+          break;
+        }
+      }
+    }
+
+    if (this.numOfPiecesOnBoard === this.numOfPieces) {
+      console.log('found solution');
+    }
+
     console.log(this.board);
   }
 
