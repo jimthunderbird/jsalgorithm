@@ -7,39 +7,50 @@ class SoloChessBoard {
 
   constructor(numOfPieces) {
     this.numOfPieces = numOfPieces;
+    this.maxCapturesPerPiece = 2;
+    this.gameTreeDepth = this.maxCapturesPerPiece + 1;
+    this.gameTreeSize = this.numOfPieces; //for N pieces, we will have N nodes in the game tree
+    this.maxNumOfChilds = 4;
+
     this.placementMap = {
       [PAWN]: {
         baseDelta: [
           [-1, 0]
-        ]
+        ],
+        range: 1
       },
       [BISHOP] : {
         baseDelta: [
           [1, 1], [1, -1], [-1, 1], [-1, -1]
-        ]
+        ],
+        range: 8
       },
       [ROOK]: {
         baseDelta: [
           [0, 1], [0, -1], [-1, 0], [1, 0]
-        ]
+        ],
+        range: 8
       },
       [QUEEN]: {
         baseDelta: [
           [0, 1], [1, 1], [1, 0], [1, -1],
           [0, -1], [-1, 1], [-1, 0], [-1, -1]
-        ]
+        ],
+        range: 8
       },
       [KING]: {
         baseDelta: [
           [0, 1], [1, 1], [1, 0], [1, -1],
           [0, -1], [-1, 1], [-1, 0], [-1, -1]
-        ]
+        ],
+        range: 1
       },
       [KNIGHT]: {
         baseDelta: [
           [-1, 2], [-1, -2], [1, 2], [1, -2],
           [2, -1], [-2, -1], [2, 1], [-2, 1]
-        ]
+        ],
+        range: 1
       }
     };
   }
@@ -113,29 +124,28 @@ class SoloChessBoard {
    * get available squares when placing a piece to a specific square
    */
   getAvailableSourceSquaresForPlacement(piece, square) {
-    const row = square.row;
-    const col = square.col;
-
-    const squares = [];
+    const squaresHash = {};
 
     const deltas = this.placementMap[piece].baseDelta;
+    const range = this.placementMap[piece].range;
     for (let ci = 0; ci < deltas.length; ci += 1) {
       const delta = deltas[ci];
-      const r = row + delta[0];
-      const c = col + delta[1];
-      //make sure:
-      //this coordinate is inside the board
-      //this coordinate is not occupied yet
-      //no pawn promotion
-      //do not block a piece
-      let squareIsValid = false;
-      const resultSquare = {};
+      for (let r = 1; r <= range; r += 1) {
+        const row = square.row + delta[0] * r;
+        const col = square.col + delta[1] * r;
+        //make sure:
+        //this coordinate is inside the board
+        //this coordinate is not occupied yet
+        //no pawn promotion
+        //do not block a piece
+        let squareIsValid = false;
+        const resultSquare = {};
 
-      if ((r >= 1 && r <= 7) &&
-        (c >= 1 && c <= 7) &&
-        this.board[r][c] === '-' &&
-        !(piece === PAWN && r < 2)) {
-        /*
+        if ((row >= 0 && row <= 7) &&
+          (col >= 0 && col <= 7) &&
+          this.board[row][col] === '-' &&
+          !(piece === PAWN && r < 2)) {
+          /*
         if (affectedCoordinates.length > 0) {
           const affectedCoord = affectedCoordinates[ci];
           const ar = row + affectedCoord[0];
@@ -153,17 +163,19 @@ class SoloChessBoard {
           squareIsValid = true;
         }
         */
-        squareIsValid = true;
-      }
+          squareIsValid = true;
+        }
 
-      if (squareIsValid) {
-        resultSquare.row = r;
-        resultSquare.col = c;
-        squares.push(resultSquare);
+        if (squareIsValid) {
+          resultSquare.row = row;
+          resultSquare.col = col;
+          const key = `${row}${col}`;
+          squaresHash[key] = resultSquare;
+        }
       }
     }
 
-    return squares;
+    return Object.values(squaresHash);
   }
 
   /**
@@ -190,22 +202,19 @@ class SoloChessBoard {
     return this.availablePcs[Math.floor(Math.random() * this.availablePcs.length)];
   }
 
-  addPieceOnSquare(piece, square) {
-    this.board[square.row][square.col] = piece;
-    this.numOfPiecesOnBoard += 1;
+  /**
+   * get a random square
+   */
+  getRandomSquare() {
+    return {
+      row: Math.floor(Math.random() * 8),
+      col: Math.floor(Math.random() * 8)
+    };
   }
 
-  /**
-   * generate the first piece and square in the board
-   */
-  generateFirstPieceAndSquare() {
-    const row = Math.floor(Math.random() * 8);
-    const col = Math.floor(Math.random() * 8);
-    const piece = this.getRandomPiece();
-    this.firstOccupiedSquare = { row, col };
-    this.addPieceOnSquare(piece, this.firstOccupiedSquare);
-    const square = { row, col };
-    return { piece, square };
+  addPieceToSquare(piece, square) {
+    this.board[square.row][square.col] = piece;
+    this.numOfPiecesOnBoard += 1;
   }
 
   /**
@@ -250,7 +259,7 @@ class SoloChessBoard {
   generateCapturesForLeafNode(leafNode) {
     const captures = [];
 
-    //this.addPieceOnSquare(nodesInPath[i].piece, nodesInPath[i].square)
+    //this.addPieceToSquare(nodesInPath[i].piece, nodesInPath[i].square)
 
     /*const capture = {*/
     /*piece: leafNode.piece,*/
@@ -261,9 +270,10 @@ class SoloChessBoard {
   }
 
   generateSolution() {
-    const maxCapturesPerPiece = 2;
-    const gameTreeDepth = maxCapturesPerPiece + 1;
-    const gameTreeSize = this.numOfPieces; //for N pieces, we will have N nodes in the game tree
+    this.board = this.getEmptyBoard();
+    this.numOfPiecesOnBoard = 0;
+    console.log(this.getAvailableSourceSquaresForPlacement('Q', {row: 0, col: 0}));
+    return;
 
     //try maximum 1000000 times
     let solution;
@@ -281,38 +291,45 @@ class SoloChessBoard {
       this.numOfPiecesOnBoard = 0;
       this.board = this.getEmptyBoard();
       //generate the game tree, with levels ranging from 1 (the root node) to gameTreeDepth
-      //also, make sure the game tree has a maximum of 8 child nodes
+      //also, make sure the game tree has up to the maximum number of child nodes
       for (;;) {
-        this.gameTreeNodes = this.generateGameTree(gameTreeSize, gameTreeDepth);
+        this.gameTreeNodes = this.generateGameTree(this.gameTreeSize, this.gameTreeDepth);
         if (this.gameTreeNodes.filter((node) => {
-          return node.numOfChilds <= 8;
+          return node.numOfChilds <= this.maxNumOfChilds;
         }).length === this.gameTreeNodes.length) {
           break;
         }
       }
 
-      break;
-
       //now find out all the leaf nodes, they are the nodes that launch captures
-      const leafNodes = this.gameTreeNodes.filter((node) => {
+      let leafNodes = this.gameTreeNodes.filter((node) => {
         return node.numOfChilds === 0;
       });
 
+      //if we have kings in the bord, the last leaf node should be a king
+      if (this.hasKing) {
+        leafNodes[leafNodes.length - 1].piece = KING;
+      }
 
-      //generate the first piece
-      const { piece, square } = this.generateFirstPieceAndSquare();
-      //also, we add the piece to the root node of the game tree
-      this.gameTreeNodes[0].piece = piece;
-      this.gameTreeNodes[0].square = square;
-
-      leafNodes.forEach((leafNode, index) => {
-        leafNode.isLastNode = false;
-        if (index === leafNodes.length - 1) {
-          leafNode.isLastNode = true;
+      leafNodes.forEach((leafNode) => {
+        //attack the parent node
+        if (leafNode.parentNode) {
+          const parentNode = leafNode.parentNode;
+          if (!parentNode.piece) {
+            parentNode.piece = this.getRandomPiece();
+            parentNode.square = this.getRandomSquare();
+          }
+          const sourceSquares = this.getAvailableSourceSquaresForPlacement(parentNode.piece, parentNode.square);
+          leafNode.square = sourceSquares[Math.floor(Math.random() * sourceSquares.length)];
+          if (parentNode.numOfChilds > 0) {
+            parentNode.numOfChilds -= 1;
+            console.log(parentNode.numOfChilds);
+          }
         }
-
-        solution.captures = solution.captures.concat(this.generateCapturesForLeafNode(leafNode));
+        //solution.captures = solution.captures.concat(this.generateCapturesForLeafNode(leafNode));
       });
+      console.log('done');
+      break;
 
       if (solution.captures.length > 0 && this.numOfPiecesOnBoard === this.numOfPieces) {
         solution.valid = true;
@@ -380,4 +397,4 @@ function generatePosition(numOfPieces) {
 }
 
 /////////////////////// Main ///////////////////////////
-generatePosition(40);
+generatePosition(16);
