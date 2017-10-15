@@ -106,6 +106,10 @@ class SoloChessBoard {
       }
     }
 
+    console.log('hash way');
+    console.log(Object.values(squaresHash));
+    console.log('jce way');
+    console.log(this.getReachableSquaresOfPiece(piece, square));
     return Object.values(squaresHash);
   }
 
