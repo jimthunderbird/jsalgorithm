@@ -8,10 +8,6 @@ class SoloChessBoard {
 
   constructor(numOfPieces) {
     this.numOfPieces = numOfPieces;
-    this.maxCapturesPerPiece = 2;
-    this.gameTreeDepth = this.maxCapturesPerPiece + 1;
-    this.gameTreeSize = this.numOfPieces; //for N pieces, we will have N nodes in the game tree
-    this.maxNumOfChilds = 8;
 
     this.placementMap = {
       [PAWN]: {
@@ -106,10 +102,12 @@ class SoloChessBoard {
       }
     }
 
+    /*
     console.log('hash way');
     console.log(Object.values(squaresHash));
     console.log('jce way');
     console.log(this.getReachableSquaresOfPiece(piece, square));
+    */
     return Object.values(squaresHash);
   }
 
@@ -125,12 +123,7 @@ class SoloChessBoard {
     }
     const sourceSquare = sourceSquares[Math.floor(Math.random() * sourceSquares.length)];
     this.addPieceToSquare(piece, sourceSquare);
-    const affectedSquares = this.getAffectedSquaresOnMove({
-      piece: piece,
-      square: sourceSquare
-    }, {
-      square: square
-    });
+    const affectedSquares = this.getAffectedSquaresOnPieceMove(piece, sourceSquare, square);
 
     affectedSquares.forEach((square) => {
       this.board[square.row][square.col] = '*';
@@ -180,22 +173,22 @@ class SoloChessBoard {
     return reachableSquares;
   }
 
-  getAffectedSquaresOnMove(from, to) {
+  getAffectedSquaresOnPieceMove(piece, fromSquare, toSquare) {
     const squares = [];
-    const range = this.placementMap[from.piece].range;
-    if (range > 1) {
-      const amplifier = Math.max(Math.abs(to.square.row - from.square.row), Math.abs(to.square.col - from.square.col));
-      let delta = [(from.square.row - to.square.row) / amplifier, (from.square.col - to.square.col) / amplifier];
-      let row = from.square.row;
-      let col = from.square.col;
+    //only queen, bishop, rook should have affected squares
+    if ([QUEEN, BISHOP, ROOK].includes(piece)) {
+      const amplifier = Math.max(Math.abs(toSquare.row - fromSquare.row), Math.abs(toSquare.col - fromSquare.col));
+      let delta = [(fromSquare.row - toSquare.row) / amplifier, (fromSquare.col - toSquare.col) / amplifier];
+      let row = fromSquare.row;
+      let col = fromSquare.col;
       for (;;) {
         row -= delta[0];
         col -= delta[1];
-        if (Math.abs(row - to.square.row) === 0 && Math.abs(col - to.square.col) === 0) {
+        if (Math.abs(row - toSquare.row) === 0 && Math.abs(col - toSquare.col) === 0) {
           break;
         } else {
-          //the affected square should just be an empty square or an affected square
-          if (this.board[row][col] === '-' || this.board[row][col] === '*') {
+          //the affected square should just be an empty square
+          if (this.board[row][col] === '-') {
             squares.push({row, col});
           }
         }
