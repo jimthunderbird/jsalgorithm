@@ -8,48 +8,6 @@ class SoloChessBoard {
 
   constructor(numOfPieces) {
     this.numOfPieces = numOfPieces;
-
-    this.placementMap = {
-      [PAWN]: {
-        baseDelta: [
-          [-1, 0]
-        ],
-        range: 1
-      },
-      [BISHOP] : {
-        baseDelta: [
-          [1, 1], [1, -1], [-1, 1], [-1, -1]
-        ],
-        range: 8
-      },
-      [ROOK]: {
-        baseDelta: [
-          [0, 1], [0, -1], [-1, 0], [1, 0]
-        ],
-        range: 8
-      },
-      [QUEEN]: {
-        baseDelta: [
-          [0, 1], [1, 1], [1, 0], [1, -1],
-          [0, -1], [-1, 1], [-1, 0], [-1, -1]
-        ],
-        range: 8
-      },
-      [KING]: {
-        baseDelta: [
-          [0, 1], [1, 1], [1, 0], [1, -1],
-          [0, -1], [-1, 1], [-1, 0], [-1, -1]
-        ],
-        range: 1
-      },
-      [KNIGHT]: {
-        baseDelta: [
-          [-1, 2], [-1, -2], [1, 2], [1, -2],
-          [2, -1], [-2, -1], [2, 1], [-2, 1]
-        ],
-        range: 1
-      }
-    };
   }
 
   getEmptyBoard() {
@@ -65,50 +23,58 @@ class SoloChessBoard {
     ];
   }
 
-  /**
-   * get available squares when placing a piece to a specific square
-   */
-  getAvailableSourceSquaresForPlacement(piece, square) {
-    const squaresHash = {};
+  getReachableSquaresOfPiece(piece, square) {
+    const onePieceBoard = this.getEmptyBoard();
+    onePieceBoard[square.row][square.col] = piece;
+    const reachableSquares = JCE.getLegalMoves(arrToFen(onePieceBoard)).map((move) => {
+      return move.to;
+    }).map((coordinate) => {
+      return {
+        row: 8 - coordinate[1],
+        col: coordinate.charCodeAt(0) - 97
+      };
+    });
+    return reachableSquares;
+  }
 
-    const deltas = this.placementMap[piece].baseDelta;
-    const range = this.placementMap[piece].range;
-    for (let i = 0; i < deltas.length; i += 1) {
-      const delta = deltas[i];
-      for (let r = 1; r <= range; r += 1) {
-        const row = square.row + delta[0] * r;
-        const col = square.col + delta[1] * r;
-        //make sure:
-        //this coordinate is inside the board
-        //this coordinate is not occupied yet
-        //no pawn promotion
-        //do not block a piece
-        let squareIsValid = false;
-        const resultSquare = {};
-
-        if ((row >= 0 && row <= 7) &&
-          (col >= 0 && col <= 7) &&
-          this.board[row][col] === '-' &&
-          !(piece === PAWN && r < 2)) {
-          squareIsValid = true;
-        }
-
-        if (squareIsValid) {
-          resultSquare.row = row;
-          resultSquare.col = col;
-          const key = `${row}${col}`;
-          squaresHash[key] = resultSquare;
+  getAffectedSquaresOnPieceMove(piece, fromSquare, toSquare) {
+    const squares = [];
+    //only queen, bishop, rook should have affected squares
+    if ([QUEEN, BISHOP, ROOK].includes(piece)) {
+      const amplifier = Math.max(Math.abs(toSquare.row - fromSquare.row), Math.abs(toSquare.col - fromSquare.col));
+      let delta = [(fromSquare.row - toSquare.row) / amplifier, (fromSquare.col - toSquare.col) / amplifier];
+      let row = fromSquare.row;
+      let col = fromSquare.col;
+      for (;;) {
+        row -= delta[0];
+        col -= delta[1];
+        if (Math.abs(row - toSquare.row) === 0 && Math.abs(col - toSquare.col) === 0) {
+          break;
+        } else {
+          //the affected square should just be an empty square
+          if (this.board[row][col] === '-') {
+            squares.push({row, col});
+          }
         }
       }
     }
+    return squares;
+  }
 
-    /*
-    console.log('hash way');
-    console.log(Object.values(squaresHash));
-    console.log('jce way');
-    console.log(this.getReachableSquaresOfPiece(piece, square));
-    */
-    return Object.values(squaresHash);
+  /**
+   * get available source squares when placing a piece to a specific square
+   */
+  getAvailableSourceSquaresForPlacement(piece, square) {
+    const squares = this.getReachableSquaresOfPiece(piece, square).filter((square) => {
+      //we should make sure:
+      //1. the square is an empty square
+      //2. there is no pawn promotion
+      return (
+        !(piece === PAWN && square.row < 2) &&
+        this.board[square.row][square.col] === '-');
+    });
+
+    return squares;
   }
 
   /**
@@ -156,47 +122,6 @@ class SoloChessBoard {
     this.numOfPiecesOnBoard += 1;
   }
 
-  getReachableSquaresOfPiece(piece, square) {
-    const onePieceBoard = this.getEmptyBoard();
-    onePieceBoard[square.row][square.col] = piece;
-    const reachableSquares = JCE.getLegalMoves(arrToFen(onePieceBoard)).map((move) => {
-      return move.to;
-    }).map((coordinate) => {
-      return {
-        row: 8 - coordinate[1],
-        col: coordinate.charCodeAt(0) - 97
-      };
-    }).filter((coordinate) => {
-      //make sure this coordinate is not affected
-      return this.board[coordinate.row][coordinate.col] !== '*';
-    });
-    return reachableSquares;
-  }
-
-  getAffectedSquaresOnPieceMove(piece, fromSquare, toSquare) {
-    const squares = [];
-    //only queen, bishop, rook should have affected squares
-    if ([QUEEN, BISHOP, ROOK].includes(piece)) {
-      const amplifier = Math.max(Math.abs(toSquare.row - fromSquare.row), Math.abs(toSquare.col - fromSquare.col));
-      let delta = [(fromSquare.row - toSquare.row) / amplifier, (fromSquare.col - toSquare.col) / amplifier];
-      let row = fromSquare.row;
-      let col = fromSquare.col;
-      for (;;) {
-        row -= delta[0];
-        col -= delta[1];
-        if (Math.abs(row - toSquare.row) === 0 && Math.abs(col - toSquare.col) === 0) {
-          break;
-        } else {
-          //the affected square should just be an empty square
-          if (this.board[row][col] === '-') {
-            squares.push({row, col});
-          }
-        }
-      }
-    }
-    return squares;
-  }
-
   generateSolution() {
     let solution;
     for (let t = 1; t <= 10000; t += 1) { //t means outer trys
@@ -213,6 +138,9 @@ class SoloChessBoard {
       } else {
         this.availablePcs = [KNIGHT, QUEEN, PAWN, ROOK, BISHOP];
       }
+
+      console.log(this.getAvailableSourceSquaresForPlacement('Q', {row: 3, col: 3}));
+      return;
 
       //randomly generate the rootSquare
       let rootSquare;
@@ -305,4 +233,4 @@ function generatePosition(numOfPieces) {
 }
 
 /////////////////////// Main ///////////////////////////
-generatePosition(20);
+generatePosition(16);
