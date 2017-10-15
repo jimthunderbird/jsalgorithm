@@ -325,7 +325,7 @@ class SoloChessBoard {
   }
 
   generateSolutionV2() {
-    for (let t = 1; t <= 10000; t += 1) {
+    for (let t = 1; t <= 10000; t += 1) { //t means outer trys
       this.board = this.getEmptyBoard();
       this.numOfPiecesOnBoard = 0;
 
@@ -355,7 +355,7 @@ class SoloChessBoard {
 
       for (let i = 0; i < this.numOfPieces - 1; i += 1) {
         // the last piec to stay should be a king
-        for (let it = 1; it <= 100; it += 1) {
+        for (let it = 1; it <= 200; it += 1) { //it means inner trys
           if (i === this.numOfPieces - 2 && this.hasKing) {
             piece = KING;
           } else {
@@ -369,11 +369,7 @@ class SoloChessBoard {
       }
 
       if (this.numOfPiecesOnBoard === this.numOfPieces) {
-        console.log('found solution ok');
         break;
-      } else {
-        console.log('incomplete solution with pieces:');
-        console.log(this.numOfPiecesOnBoard);
       }
     }
 
@@ -486,4 +482,4 @@ function generatePosition(numOfPieces) {
 }
 
 /////////////////////// Main ///////////////////////////
-generatePosition(16);
+generatePosition(20);
