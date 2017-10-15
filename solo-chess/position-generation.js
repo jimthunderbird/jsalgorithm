@@ -3,6 +3,8 @@
  * There will be a game tree representing a piece and its move action (node)
  */
 
+const JCE = require('../jsChessEngine/bin/JCE.js');
+
 class SoloChessBoard {
 
   constructor(numOfPieces) {
@@ -10,7 +12,7 @@ class SoloChessBoard {
     this.maxCapturesPerPiece = 2;
     this.gameTreeDepth = this.maxCapturesPerPiece + 1;
     this.gameTreeSize = this.numOfPieces; //for N pieces, we will have N nodes in the game tree
-    this.maxNumOfChilds = 4;
+    this.maxNumOfChilds = 8;
 
     this.placementMap = {
       [PAWN]: {
@@ -284,6 +286,28 @@ class SoloChessBoard {
     return captures;
   }
 
+  getReachableSquaresOfPiece(piece, square) {
+    const onePieceBoard = this.getEmptyBoard();
+    onePieceBoard[square.row][square.col] = piece;
+    const reachableSquares = JCE.getLegalMoves(arrToFen(onePieceBoard)).map((move) => {
+      return move.to;
+    }).map((coordinate) => {
+      return {
+        row: 8 - coordinate[1],
+        col: coordinate.charCodeAt(0) - 97
+      };
+    });
+    return reachableSquares;
+  }
+
+  generateSolutionV2() {
+    this.board = this.getEmptyBoard();
+    this.getReachableSquaresOfPiece('N', {row: 3, col: 3}).forEach((square) => {
+      this.board[square.row][square.col] = '*';
+    });
+    console.log(this.board);
+  }
+
   generateSolution() {
     //try maximum 1000000 times
     let solution;
@@ -316,30 +340,12 @@ class SoloChessBoard {
         return node.numOfChilds === 0;
       });
 
-      //if we have kings in the bord, the last leaf node should be a king
+      //if we have kings in the board, the last leaf node should be a king
       if (this.hasKing) {
         leafNodes[leafNodes.length - 1].piece = KING;
       }
 
-      leafNodes.forEach((leafNode) => {
-        //attack the parent node
-        if (leafNode.parentNode) {
-          const parentNode = leafNode.parentNode;
-          if (!parentNode.piece) {
-            parentNode.piece = this.getRandomPiece();
-            parentNode.square = this.getRandomSquare();
-          }
-          const sourceSquares = this.getAvailableSourceSquaresForPlacement(parentNode.piece, parentNode.square);
-          leafNode.square = sourceSquares[Math.floor(Math.random() * sourceSquares.length)];
-          if (parentNode.numOfChilds > 0) {
-            parentNode.numOfChilds -= 1;
-            console.log(parentNode.numOfChilds);
-          }
-        }
-        //solution.captures = solution.captures.concat(this.generateCapturesForLeafNode(leafNode));
-      });
-      console.log('done');
-      break;
+      //solution.captures = solution.captures.concat(this.generateCapturesForLeafNode(leafNode));
 
       if (solution.captures.length > 0 && this.numOfPiecesOnBoard === this.numOfPieces) {
         solution.valid = true;
@@ -350,6 +356,8 @@ class SoloChessBoard {
       } else {
         solution.valid = false;
       }
+
+      break;
     }
 
     return solution;
@@ -402,9 +410,8 @@ const arrToFen = (arr) => {
 
 function generatePosition(numOfPieces) {
   const board = new SoloChessBoard(numOfPieces);
-  board.generateSolution();
-  board.print();
+  board.generateSolutionV2();
 }
 
 /////////////////////// Main ///////////////////////////
-generatePosition(16);
+generatePosition(4);
