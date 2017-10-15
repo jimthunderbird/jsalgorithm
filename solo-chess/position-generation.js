@@ -100,8 +100,6 @@ class SoloChessBoard {
         if (squareIsValid) {
           resultSquare.row = row;
           resultSquare.col = col;
-          resultSquare.delta = deltas[i];
-          resultSquare.range = range;
           const key = `${row}${col}`;
           squaresHash[key] = resultSquare;
         }
