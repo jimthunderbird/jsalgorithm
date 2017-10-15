@@ -176,20 +176,17 @@ class SoloChessBoard {
     }
     const sourceSquare = sourceSquares[Math.floor(Math.random() * sourceSquares.length)];
     this.addPieceToSquare(piece, sourceSquare);
-    //now need to also add the affected squares
-    if (sourceSquare.range > 1) {
-      let row = sourceSquare.row;
-      let col = sourceSquare.col;
-      for (;;) {
-        row -= sourceSquare.delta[0];
-        col -= sourceSquare.delta[1];
-        if (Math.abs(row - square.row) === 0 && Math.abs(col - square.col) === 0) {
-          break;
-        } else {
-          this.board[row][col] = '*';
-        }
-      }
-    }
+    const affectedSquares = this.getAffectedSquaresOnMove({
+      piece: piece,
+      square: sourceSquare
+    }, {
+      square: square
+    });
+
+    affectedSquares.forEach((square) => {
+      this.board[square.row][square.col] = '*';
+    });
+
     result.success = true;
     result.square = sourceSquare;
     return result;
@@ -317,7 +314,12 @@ class SoloChessBoard {
         if (Math.abs(row - to.square.row) === 0 && Math.abs(col - to.square.col) === 0) {
           break;
         } else {
-          squares.push({row, col});
+          //the affected square should just be an empty square
+          if (this.board[row][col] === '-' || this.board[row][col] === '*') {
+            squares.push({row, col});
+          } else {
+            console.log(`found piece at affected square at ${row}:${col}:${this.board[row][col]}`);
+          }
         }
       }
     }
@@ -349,13 +351,16 @@ class SoloChessBoard {
         piece = this.getRandomPiece();
         const result = this.placePieceAroundSquare(piece, rootSquare);
         if (result.success) {
+          if (this.board[result.square.row][result.square.col] !== piece) {
+            console.log(`${piece}->${result.square.row}:${result.square.col}`);
+          }
           break;
         }
       }
     }
 
     if (this.numOfPiecesOnBoard === this.numOfPieces) {
-      console.log('found solution');
+      console.log('found solution ok');
     }
 
     console.log(this.board);
@@ -467,4 +472,4 @@ function generatePosition(numOfPieces) {
 }
 
 /////////////////////// Main ///////////////////////////
-generatePosition(4);
+generatePosition(8);
