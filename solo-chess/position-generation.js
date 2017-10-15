@@ -314,11 +314,9 @@ class SoloChessBoard {
         if (Math.abs(row - to.square.row) === 0 && Math.abs(col - to.square.col) === 0) {
           break;
         } else {
-          //the affected square should just be an empty square
+          //the affected square should just be an empty square or an affected square
           if (this.board[row][col] === '-' || this.board[row][col] === '*') {
             squares.push({row, col});
-          } else {
-            console.log(`found piece at affected square at ${row}:${col}:${this.board[row][col]}`);
           }
         }
       }
@@ -327,40 +325,56 @@ class SoloChessBoard {
   }
 
   generateSolutionV2() {
-    this.board = this.getEmptyBoard();
-    this.numOfPiecesOnBoard = 0;
+    for (let t = 1; t <= 10000; t += 1) {
+      this.board = this.getEmptyBoard();
+      this.numOfPiecesOnBoard = 0;
 
-    this.hasKing = true;
+      this.hasKing = true;
 
-    if (this.hasKing) {
-      this.availablePcs = [KNIGHT, KING, QUEEN, PAWN, ROOK, BISHOP];
-    } else {
-      this.availablePcs = [KNIGHT, QUEEN, PAWN, ROOK, BISHOP];
-    }
+      if (this.hasKing) {
+        this.availablePcs = [KNIGHT, KING, QUEEN, PAWN, ROOK, BISHOP];
+      } else {
+        this.availablePcs = [KNIGHT, QUEEN, PAWN, ROOK, BISHOP];
+      }
 
-    //randomly generate the rootSquare
-    const rootSquare = this.getRandomSquare()
-    const rootPiece = this.getRandomPiece();
-
-    this.addPieceToSquare(rootPiece, rootSquare);
-
-    let piece;
-
-    for (let i = 0; i < this.numOfPieces - 1; i += 1) {
-      for (let t = 1; t <= 100; t += 1) {
-        piece = this.getRandomPiece();
-        const result = this.placePieceAroundSquare(piece, rootSquare);
-        if (result.success) {
-          if (this.board[result.square.row][result.square.col] !== piece) {
-            console.log(`${piece}->${result.square.row}:${result.square.col}`);
-          }
+      //randomly generate the rootSquare
+      let rootSquare;
+      let rootPiece;
+      for (;;) {
+        rootSquare = this.getRandomSquare()
+        rootPiece = this.getRandomPiece();
+        //root piece should not have pawn promotion
+        if (!(rootPiece === PAWN && rootSquare.row < 2)) {
           break;
         }
       }
-    }
 
-    if (this.numOfPiecesOnBoard === this.numOfPieces) {
-      console.log('found solution ok');
+      this.addPieceToSquare(rootPiece, rootSquare);
+
+      let piece;
+
+      for (let i = 0; i < this.numOfPieces - 1; i += 1) {
+        // the last piec to stay should be a king
+        for (let it = 1; it <= 100; it += 1) {
+          if (i === this.numOfPieces - 2 && this.hasKing) {
+            piece = KING;
+          } else {
+            piece = this.getRandomPiece();
+          }
+          const result = this.placePieceAroundSquare(piece, rootSquare);
+          if (result.success) {
+            break;
+          }
+        }
+      }
+
+      if (this.numOfPiecesOnBoard === this.numOfPieces) {
+        console.log('found solution ok');
+        break;
+      } else {
+        console.log('incomplete solution with pieces:');
+        console.log(this.numOfPiecesOnBoard);
+      }
     }
 
     console.log(this.board);
@@ -472,4 +486,4 @@ function generatePosition(numOfPieces) {
 }
 
 /////////////////////// Main ///////////////////////////
-generatePosition(8);
+generatePosition(16);
