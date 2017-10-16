@@ -8,7 +8,8 @@ class SoloChessBoard {
 
   constructor(numOfPieces) {
     this.numOfPieces = numOfPieces;
-    this.piecesOnBoard = [];
+    this.pieceInfos = {};
+    this.reachableSquaresCache = {};
   }
 
   getEmptyBoard() {
@@ -31,23 +32,25 @@ class SoloChessBoard {
     this.board = this.getEmptyBoard();
     this.piecesInfos = [];
     this.numOfPiecesOnBoard = 0;
+    this.pieceInfoMap = [];
   }
 
   getReachableSquaresOfPiece(piece, square) {
-    const onePieceBoard = this.getEmptyBoard();
-    onePieceBoard[square.row][square.col] = piece;
-    const reachableSquares = JCE.getLegalMoves(arrToFen(onePieceBoard)).map((move) => {
-      return move.to;
-    }).map((coordinate) => {
-      return {
-        row: 8 - coordinate[1],
-        col: coordinate.charCodeAt(0) - 97
-      };
-    }).filter((reachableSquare) => {
-      //special case for pawn, pawn can only "move up (move to the lower row")
-      return !(piece === PAWN && reachableSquare.row < square.row);
-    });
-    return reachableSquares;
+    const key = `${piece}${square.row}${square.col}`;
+    if (this.reachableSquaresCache[key] === undefined) {
+      const onePieceBoard = this.getEmptyBoard();
+      onePieceBoard[square.row][square.col] = piece;
+      const reachableSquares = JCE.getLegalMoves(arrToFen(onePieceBoard)).map((move) => {
+        return move.to;
+      }).map((coordinate) => {
+        return {
+          row: 8 - coordinate[1],
+          col: coordinate.charCodeAt(0) - 97
+        };
+      });
+      this.reachableSquaresCache[key] = reachableSquares;
+    }
+    return this.reachableSquaresCache[key];
   }
 
   getAffectedSquaresOnPieceMove(piece, fromSquare, toSquare) {
@@ -55,7 +58,10 @@ class SoloChessBoard {
     //only queen, bishop, rook should have affected squares
     if ([QUEEN, BISHOP, ROOK].includes(piece)) {
       const amplifier = Math.max(Math.abs(toSquare.row - fromSquare.row), Math.abs(toSquare.col - fromSquare.col));
-      let delta = [(fromSquare.row - toSquare.row) / amplifier, (fromSquare.col - toSquare.col) / amplifier];
+      let delta = [
+        (fromSquare.row - toSquare.row) / amplifier,
+        (fromSquare.col - toSquare.col) / amplifier
+      ];
       let row = fromSquare.row;
       let col = fromSquare.col;
       for (;;) {
@@ -78,14 +84,25 @@ class SoloChessBoard {
    * get available source squares when placing a piece to a specific square
    */
   getAvailableSourceSquaresForPlacement(piece, square) {
-    const squares = this.getReachableSquaresOfPiece(piece, square).filter((square) => {
-      //we should make sure:
-      //1. the square is an empty square
-      //2. there is no pawn promotion
-      return (
-        !(piece === PAWN && square.row < 2) &&
-        this.board[square.row][square.col] === '-');
-    });
+    //special treatment for pawn, we just place pawn below the square
+    let squares = [];
+    if (piece === PAWN) {
+      const sourceSquare = [{
+        row: square.row + 1,
+        col: square.col
+      }];
+      //make sure we do not have pawn promotion and the source square is still inside board
+      if (sourceSquare.row > 1 && sourceSquare.row <= 7) {
+        squares.push(sourceSquare);
+      }
+    } else {
+      squares = this.getReachableSquaresOfPiece(piece, square).filter((square) => {
+        //we should make sure:
+        //1. the square is an empty square
+        //2. there is no pawn promotion
+        return this.board[square.row][square.col] === '-';
+      });
+    }
 
     return squares;
   }
@@ -132,8 +149,22 @@ class SoloChessBoard {
 
   addPieceToSquare(piece, square) {
     this.board[square.row][square.col] = piece;
-    this.piecesInfos.push({piece, square});
+    const key = `${square.row}${square.col}`;
+    this.pieceInfos[key] = {piece, square, key};
     this.numOfPiecesOnBoard += 1;
+  }
+
+  getExistingPieces() {
+    const pieceInfos = [];
+    Object.keys(this.pieceInfos).map((key) => {
+      pieceInfos.push(this.pieceInfos[key]);
+    });
+    return pieceInfos;
+  }
+
+  containsSolution() {
+    const pieceInfos = this.getExistingPieces();
+
   }
 
   generateSolution() {
@@ -169,7 +200,7 @@ class SoloChessBoard {
       let piece;
 
       for (let i = 0; i < this.numOfPieces - 1; i += 1) {
-        // the last piec to stay should be a king
+        // the last piece to stay should be a king
         for (let it = 1; it <= 150; it += 1) { //it means inner trys
           if (i === this.numOfPieces - 2 && this.hasKing) {
             piece = KING;
@@ -190,8 +221,8 @@ class SoloChessBoard {
       }
 
       if (this.numOfPiecesOnBoard === this.numOfPieces) {
-        console.log('found solution');
         solution.fen = arrToFen(this.board);
+        this.solution = solution;
         break;
       }
     }
@@ -200,7 +231,7 @@ class SoloChessBoard {
       return `${capture.piece}:${capture.from.row}${capture.from.col}->${capture.to.row}${capture.to.col}`;
     }));
     console.log(this.board);
-    console.log(this.piecesInfos);
+    console.log(this.getExistingPieces());
     return solution;
   }
 }
