@@ -168,12 +168,37 @@ class SoloChessBoard {
 
   }
 
-  generateSolution() {
-    let solution;
-    for (let t = 1; t <= 1000; t += 1) { //t means outer trys
-      solution = {};
-      solution.captures = [];
+  generateSolutionWithRootPiece(rootPiece, rootSquare, numOfPieces) {
+    this.addPieceToSquare(rootPiece, rootSquare);
 
+    let piece;
+
+    for (let i = 0; i < numOfPieces - 1; i += 1) {
+      // the last piece to stay should be a king
+      for (let it = 1; it <= 100; it += 1) { //it means inner trys
+        if (i === numOfPieces - 2 && this.hasKing) {
+          piece = KING;
+        } else {
+          piece = this.getRandomPiece();
+        }
+        const result = this.placePieceAroundSquare(piece, rootSquare);
+        if (result.success) {
+          //now generate the capture
+          this.solution.captures.push({
+            piece: piece,
+            from: result.square,
+            to: rootSquare
+          });
+          break;
+        }
+      }
+    }
+  }
+
+  generateSolution() {
+    this.solution = {};
+    for (let t = 1; t <= 1000; t += 1) { //t means outer trys
+      this.solution.captures = [];
       this.clear();
 
       this.hasKing = Math.round(Math.random()); //will this solution contains king?
@@ -187,61 +212,55 @@ class SoloChessBoard {
       //randomly generate the rootSquare
       let rootSquare;
       let rootPiece;
+      let reachableSquares;
       for (;;) {
         rootSquare = this.getRandomSquare()
         rootPiece = this.getRandomPiece();
+        reachableSquares = this.getReachableSquaresOfPiece(rootPiece, rootSquare);
         //root piece should not have pawn promotion
-        if (!(rootPiece === PAWN && rootSquare.row < 2)) {
+        //the root square should have at least 1 reachable square
+        if (!(rootPiece === PAWN && rootSquare.row < 2) &&
+          reachableSquares.length >= 1
+        ) {
           break;
         }
       }
 
-      this.addPieceToSquare(rootPiece, rootSquare);
+      const nextRootSquare = reachableSquares[
+        Math.floor(Math.random() * reachableSquares.length)
+      ];
+      const nextRootPiece = this.getRandomPiece();
 
-      let piece;
+      //divide all nodes among 2 trees
+      const numOfPieces1 = 1 + Math.floor(Math.random() * this.numOfPieces);
+      const numOfPieces2 = this.numOfPieces - numOfPieces1;
+      this.generateSolutionWithRootPiece(rootPiece, rootSquare, numOfPieces1);
+      this.generateSolutionWithRootPiece(nextRootPiece, nextRootSquare, numOfPieces2);
 
-      for (let i = 0; i < this.numOfPieces - 1; i += 1) {
-        // the last piece to stay should be a king
-        for (let it = 1; it <= 200; it += 1) { //it means inner trys
-          if (i === this.numOfPieces - 2 && this.hasKing) {
-            piece = KING;
-          } else {
-            piece = this.getRandomPiece();
-          }
-          const result = this.placePieceAroundSquare(piece, rootSquare);
-          if (result.success) {
-            //now generate the capture
-            solution.captures.push({
-              piece: piece,
-              from: result.square,
-              to: rootSquare
-            });
-            break;
-          }
-        }
-      }
+      //simply record capture of root square to next root square
+      this.solution.captures.push({
+        piece: this.hasKing ? KING: rootPiece,
+        from: nextRootSquare,
+        to: rootSquare
+      });
 
       if (this.numOfPiecesOnBoard === this.numOfPieces) {
         this.maxNumOfpiecesOnBoard = this.numOfPiecesOnBoard;
-        solution.fen = arrToFen(this.board);
-        this.solution = solution;
+        this.solution.fen = arrToFen(this.board);
         break;
       } else if( this.numOfPiecesOnBoard > this.maxNumOfpiecesOnBoard ) {
         this.maxNumOfpiecesOnBoard = this.numOfPiecesOnBoard;
-        solution.fen = arrToFen(this.board);
-        this.solution = solution;
+        this.solution.fen = arrToFen(this.board);
       }
     }
 
-    /*
-    console.log(solution.captures.map((capture) => {
+    console.log(this.solution.captures.length);
+    console.log(this.solution.captures.map((capture) => {
       return `${capture.piece}:${capture.from.row}${capture.from.col}->${capture.to.row}${capture.to.col}`;
     }));
     console.log(this.board);
-    console.log(this.solution);
-    */
-    console.log(this.maxNumOfpiecesOnBoard);
-    return solution;
+    console.log(this.numOfPiecesOnBoard);
+    return this.solution;
   }
 }
 
@@ -291,4 +310,4 @@ function generatePosition(numOfPieces) {
 }
 
 /////////////////////// Main ///////////////////////////
-generatePosition(20);
+generatePosition(30);
