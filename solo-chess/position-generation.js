@@ -10,6 +10,7 @@ class SoloChessBoard {
     this.numOfPieces = numOfPieces;
     this.pieceInfos = {};
     this.reachableSquaresCache = {};
+    this.maxNumOfpiecesOnBoard = 0;
   }
 
   getEmptyBoard() {
@@ -201,7 +202,7 @@ class SoloChessBoard {
 
       for (let i = 0; i < this.numOfPieces - 1; i += 1) {
         // the last piece to stay should be a king
-        for (let it = 1; it <= 150; it += 1) { //it means inner trys
+        for (let it = 1; it <= 200; it += 1) { //it means inner trys
           if (i === this.numOfPieces - 2 && this.hasKing) {
             piece = KING;
           } else {
@@ -224,14 +225,21 @@ class SoloChessBoard {
         solution.fen = arrToFen(this.board);
         this.solution = solution;
         break;
+      } else if( this.numOfPiecesOnBoard > this.maxNumOfpiecesOnBoard ) {
+        this.maxNumOfpiecesOnBoard = this.numOfPiecesOnBoard;
+        solution.fen = arrToFen(this.board);
+        this.solution = solution;
       }
     }
 
+    /*
     console.log(solution.captures.map((capture) => {
       return `${capture.piece}:${capture.from.row}${capture.from.col}->${capture.to.row}${capture.to.col}`;
     }));
     console.log(this.board);
-    console.log(this.getExistingPieces());
+    console.log(this.solution);
+    */
+    console.log(this.numOfPiecesOnBoard);
     return solution;
   }
 }
@@ -282,4 +290,4 @@ function generatePosition(numOfPieces) {
 }
 
 /////////////////////// Main ///////////////////////////
-generatePosition(4);
+generatePosition(10);
