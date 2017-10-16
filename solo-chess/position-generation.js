@@ -34,7 +34,7 @@ class SoloChessBoard {
         col: coordinate.charCodeAt(0) - 97
       };
     }).filter((reachableSquare) => {
-      //special case for pawn, pawn can only "move up (move to the lower row"
+      //special case for pawn, pawn can only "move up (move to the lower row")
       return !(piece === PAWN && reachableSquare.row < square.row);
     });
     return reachableSquares;
@@ -134,7 +134,7 @@ class SoloChessBoard {
       this.board = this.getEmptyBoard();
       this.numOfPiecesOnBoard = 0;
 
-      this.hasKing = true;
+      this.hasKing = Math.round(Math.random()); //will this solution contains king?
 
       if (this.hasKing) {
         this.availablePcs = [KNIGHT, KING, QUEEN, PAWN, ROOK, BISHOP];
