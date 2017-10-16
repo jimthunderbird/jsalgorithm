@@ -8,6 +8,7 @@ class SoloChessBoard {
 
   constructor(numOfPieces) {
     this.numOfPieces = numOfPieces;
+    this.piecesOnBoard = [];
   }
 
   getEmptyBoard() {
@@ -21,6 +22,15 @@ class SoloChessBoard {
       ['-', '-', '-', '-', '-', '-', '-', '-'],
       ['-', '-', '-', '-', '-', '-', '-', '-']
     ];
+  }
+
+  /**
+   * clear up the board
+   */
+  clear() {
+    this.board = this.getEmptyBoard();
+    this.piecesInfos = [];
+    this.numOfPiecesOnBoard = 0;
   }
 
   getReachableSquaresOfPiece(piece, square) {
@@ -122,17 +132,17 @@ class SoloChessBoard {
 
   addPieceToSquare(piece, square) {
     this.board[square.row][square.col] = piece;
+    this.piecesInfos.push({piece, square});
     this.numOfPiecesOnBoard += 1;
   }
 
   generateSolution() {
     let solution;
-    for (let t = 1; t <= 1000; t += 1) { //t means outer trys
+    for (let t = 1; t <= 1; t += 1) { //t means outer trys
       solution = {};
       solution.captures = [];
 
-      this.board = this.getEmptyBoard();
-      this.numOfPiecesOnBoard = 0;
+      this.clear();
 
       this.hasKing = Math.round(Math.random()); //will this solution contains king?
 
@@ -190,6 +200,7 @@ class SoloChessBoard {
       return `${capture.piece}:${capture.from.row}${capture.from.col}->${capture.to.row}${capture.to.col}`;
     }));
     console.log(this.board);
+    console.log(this.piecesInfos);
     return solution;
   }
 }
@@ -240,4 +251,4 @@ function generatePosition(numOfPieces) {
 }
 
 /////////////////////// Main ///////////////////////////
-generatePosition(15);
+generatePosition(4);
