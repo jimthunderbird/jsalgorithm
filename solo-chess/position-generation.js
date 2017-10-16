@@ -170,7 +170,7 @@ class SoloChessBoard {
 
   generateSolution() {
     let solution;
-    for (let t = 1; t <= 1; t += 1) { //t means outer trys
+    for (let t = 1; t <= 1000; t += 1) { //t means outer trys
       solution = {};
       solution.captures = [];
 
@@ -222,6 +222,7 @@ class SoloChessBoard {
       }
 
       if (this.numOfPiecesOnBoard === this.numOfPieces) {
+        this.maxNumOfpiecesOnBoard = this.numOfPiecesOnBoard;
         solution.fen = arrToFen(this.board);
         this.solution = solution;
         break;
@@ -239,7 +240,7 @@ class SoloChessBoard {
     console.log(this.board);
     console.log(this.solution);
     */
-    console.log(this.numOfPiecesOnBoard);
+    console.log(this.maxNumOfpiecesOnBoard);
     return solution;
   }
 }
@@ -290,4 +291,4 @@ function generatePosition(numOfPieces) {
 }
 
 /////////////////////// Main ///////////////////////////
-generatePosition(10);
+generatePosition(20);
