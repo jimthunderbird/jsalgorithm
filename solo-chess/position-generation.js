@@ -33,6 +33,9 @@ class SoloChessBoard {
         row: 8 - coordinate[1],
         col: coordinate.charCodeAt(0) - 97
       };
+    }).filter((reachableSquare) => {
+      //special case for pawn, pawn can only "move up (move to the lower row"
+      return !(piece === PAWN && reachableSquare.row < square.row);
     });
     return reachableSquares;
   }
@@ -237,4 +240,4 @@ function generatePosition(numOfPieces) {
 }
 
 /////////////////////// Main ///////////////////////////
-generatePosition(6);
+generatePosition(15);
