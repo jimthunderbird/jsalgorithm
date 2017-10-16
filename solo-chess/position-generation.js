@@ -178,7 +178,7 @@ class SoloChessBoard {
     this.numOfPiecesOnBoard += 1;
   }
 
-  getExistingPieces() {
+  getExistingPieceInfos() {
     const pieceInfos = [];
     Object.keys(this.pieceInfos).map((key) => {
       pieceInfos.push(this.pieceInfos[key]);
@@ -195,7 +195,7 @@ class SoloChessBoard {
     let previousPiece = '';
 
     for (let i = 0; i < numOfPieces - 1; i += 1) {
-      for (let it = 1; it <= 100; it += 1) { //it means inner trys
+      for (let it = 1; it <= 200; it += 1) { //it means inner trys
         // the last piece to stay should be a king
         if (i === numOfPieces - 2 && hasKing) {
           if ((rootPiece === KING) || //the root is a king
@@ -231,7 +231,8 @@ class SoloChessBoard {
   }
 
   generateHints() {
-
+    const pieceInfos = this.getExistingPieceInfos();
+    console.log(pieceInfos);
   }
 
   generateSolution() {
@@ -290,7 +291,7 @@ class SoloChessBoard {
         nextRootSquare,
         numOfPieces2, this.hasKing).lastPiece;
 
-      //simply record capture of root square to next root square
+      //simply record capture from next root node to the first root node
       console.log(lastPiece);
       this.solution.captures.push({
         piece: lastPiece,
@@ -314,6 +315,7 @@ class SoloChessBoard {
     }));
     console.log(this.board);
     console.log(this.numOfPiecesOnBoard);
+    this.generateHints();
     return this.solution;
   }
 }
