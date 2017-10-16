@@ -1,6 +1,8 @@
 /**
- * Algorithm summary:
- * There will be a game tree representing a piece and its move action (node)
+ * Solo Chess Rules:
+ * 1. Any pieces can not move more than 2 times
+ * 2. King should be the last one to stand
+ * 3. A king can not capture a king
  */
 const JCE = require('../jsChessEngine/bin/JCE.js');
 
@@ -34,6 +36,13 @@ class SoloChessBoard {
     this.piecesInfos = [];
     this.numOfPiecesOnBoard = 0;
     this.pieceInfoMap = [];
+  }
+
+  /**
+   * check if a piece is in pawn promotion state
+   */
+  isPawnPromotion(piece, square) {
+    return rootPiece === PAWN && rootSquare.row < 2;
   }
 
   getReachableSquaresOfPiece(piece, square) {
@@ -92,15 +101,16 @@ class SoloChessBoard {
         row: square.row + 1,
         col: square.col
       }];
-      //make sure we do not have pawn promotion and the source square is still inside board
-      if (sourceSquare.row > 1 && sourceSquare.row <= 7) {
+      //make sure the source square is still inside board
+      //also not in pawn promotion
+      if (sourceSquare.row > 1 && sourceSquare.row <= 7 &&
+      !this.isPawnPromotion(piece, sourceSquare)) {
         squares.push(sourceSquare);
       }
     } else {
       squares = this.getReachableSquaresOfPiece(piece, square).filter((square) => {
         //we should make sure:
-        //1. the square is an empty square
-        //2. there is no pawn promotion
+        //the square is an empty square
         return this.board[square.row][square.col] === '-';
       });
     }
@@ -134,8 +144,21 @@ class SoloChessBoard {
   /**
    * get a random piece
    */
-  getRandomPiece() {
-    return this.availablePcs[Math.floor(Math.random() * this.availablePcs.length)];
+  getRandomPiece(hasKing = true) {
+    let availablePcs;
+    if (hasKing) {
+      availablePcs = [KNIGHT, KING, QUEEN, PAWN, ROOK, BISHOP];
+    } else {
+      availablePcs = [KNIGHT, QUEEN, PAWN, ROOK, BISHOP];
+    }
+    return availablePcs[Math.floor(Math.random() * availablePcs.length)];
+  }
+
+  /**
+   * get a random non-king piece
+   */
+  getRandomNonKingPiece() {
+    return this.getRandomPiece(false);
   }
 
   /**
@@ -163,26 +186,36 @@ class SoloChessBoard {
     return pieceInfos;
   }
 
-  containsSolution() {
-    const pieceInfos = this.getExistingPieces();
-
-  }
-
-  generateSolutionWithRootPiece(rootPiece, rootSquare, numOfPieces) {
-    this.addPieceToSquare(rootPiece, rootSquare);
+  generateSolutionWithRootPiece(rootPiece, rootSquare, numOfPieces, hasKing) {
+    const solution = {};
+    solution.lastPiece = rootPiece;
+    this.addPieceToSquare(rootPiece + '*', rootSquare);
 
     let piece;
+    let previousPiece = '';
 
     for (let i = 0; i < numOfPieces - 1; i += 1) {
-      // the last piece to stay should be a king
       for (let it = 1; it <= 100; it += 1) { //it means inner trys
-        if (i === numOfPieces - 2 && this.hasKing) {
-          piece = KING;
-        } else {
-          piece = this.getRandomPiece();
+        // the last piece to stay should be a king
+        if (i === numOfPieces - 2 && hasKing) {
+          if ((rootPiece === KING) || //the root is a king
+          (previousPiece === KING)) { //the previous piece
+            //the new piece should not capture king
+            piece = this.getRandomNonKingPiece();
+          } else {
+            piece = KING;
+          }
+        } else { //the new piece should not capture king
+          if (rootPiece === KING) {
+            piece = this.getRandomNonKingPiece();
+          } else {
+            piece = this.getRandomPiece(hasKing);
+          }
         }
         const result = this.placePieceAroundSquare(piece, rootSquare);
         if (result.success) {
+          solution.lastPiece = piece;
+          previousPiece = piece;
           //now generate the capture
           this.solution.captures.push({
             piece: piece,
@@ -193,6 +226,12 @@ class SoloChessBoard {
         }
       }
     }
+    console.log(solution);
+    return solution;
+  }
+
+  generateHints() {
+
   }
 
   generateSolution() {
@@ -203,43 +242,58 @@ class SoloChessBoard {
 
       this.hasKing = Math.round(Math.random()); //will this solution contains king?
 
-      if (this.hasKing) {
-        this.availablePcs = [KNIGHT, KING, QUEEN, PAWN, ROOK, BISHOP];
-      } else {
-        this.availablePcs = [KNIGHT, QUEEN, PAWN, ROOK, BISHOP];
-      }
+      //divide all nodes among 2 trees
+      const numOfPieces1 = 1 + Math.floor(Math.random() * (this.numOfPieces - 1));
+      const numOfPieces2 = this.numOfPieces - numOfPieces1;
 
       //randomly generate the rootSquare
       let rootSquare;
       let rootPiece;
+      let nextRootPiece;
+      let nextRootSquare;
       let reachableSquares;
+
       for (;;) {
-        rootSquare = this.getRandomSquare()
-        rootPiece = this.getRandomPiece();
+        //the first tree does not have king
+        rootPiece = this.getRandomNonKingPiece();
+        rootSquare = this.getRandomSquare();
         reachableSquares = this.getReachableSquaresOfPiece(rootPiece, rootSquare);
-        //root piece should not have pawn promotion
-        //the root square should have at least 1 reachable square
-        if (!(rootPiece === PAWN && rootSquare.row < 2) &&
-          reachableSquares.length >= 1
-        ) {
+
+        //the second tree might have king
+        if (numOfPieces2 === 1 && this.hasKing) {
+          //special case, if the tree has just one piece
+          nextRootPiece = KING;
+        } else {
+          nextRootPiece = this.getRandomPiece();
+        }
+
+        nextRootSquare = reachableSquares[
+          Math.floor(Math.random() * reachableSquares.length)
+        ];
+
+        //do not select pawn as root
+        if (!(rootPiece === PAWN) && !(nextRootPiece === PAWN)) {
           break;
         }
       }
 
-      const nextRootSquare = reachableSquares[
-        Math.floor(Math.random() * reachableSquares.length)
-      ];
-      const nextRootPiece = this.getRandomPiece();
-
-      //divide all nodes among 2 trees
-      const numOfPieces1 = 1 + Math.floor(Math.random() * this.numOfPieces);
-      const numOfPieces2 = this.numOfPieces - numOfPieces1;
-      this.generateSolutionWithRootPiece(rootPiece, rootSquare, numOfPieces1);
-      this.generateSolutionWithRootPiece(nextRootPiece, nextRootSquare, numOfPieces2);
+      let lastPiece;
+      //the first tree will not have king
+      lastPiece = this.generateSolutionWithRootPiece(
+        rootPiece,
+        rootSquare,
+        numOfPieces1,
+        false).lastPiece;
+      //the second tree might have king
+      lastPiece = this.generateSolutionWithRootPiece(
+        nextRootPiece,
+        nextRootSquare,
+        numOfPieces2, this.hasKing).lastPiece;
 
       //simply record capture of root square to next root square
+      console.log(lastPiece);
       this.solution.captures.push({
-        piece: this.hasKing ? KING: rootPiece,
+        piece: lastPiece,
         from: nextRootSquare,
         to: rootSquare
       });
@@ -310,4 +364,4 @@ function generatePosition(numOfPieces) {
 }
 
 /////////////////////// Main ///////////////////////////
-generatePosition(30);
+generatePosition(3);
