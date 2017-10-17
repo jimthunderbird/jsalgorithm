@@ -177,11 +177,11 @@ class SoloChessBoard {
   generateSolutionWithRootPiece(rootPiece, rootSquare, numOfPieces, hasKing) {
     const solution = {};
     solution.lastPiece = rootPiece;
-    this.addPieceToSquare(rootPiece, rootSquare);
 
     let piece;
     let previousPiece = '';
 
+    //first, add all child pieces
     for (let i = 0; i < numOfPieces - 1; i += 1) {
       for (let it = 1; it <= 200; it += 1) { //it means inner trys
         // the last piece to stay should be a king
@@ -204,6 +204,7 @@ class SoloChessBoard {
         }
       }
     }
+
     return solution;
   }
 
@@ -268,6 +269,10 @@ class SoloChessBoard {
         nextRootPiece,
         nextRootSquare,
         numOfPieces2, this.hasKing).lastPiece;
+
+      //at the end, add the 2 root nodes
+      this.addPieceToSquare(rootPiece, rootSquare);
+      this.addPieceToSquare(nextRootPiece, nextRootSquare);
 
       //simply record capture from next root node to the first root node
       this.solution.captures.push({
@@ -338,4 +343,4 @@ function generatePosition(numOfPieces) {
 }
 
 /////////////////////// Main ///////////////////////////
-generatePosition(10);
+generatePosition(8);
