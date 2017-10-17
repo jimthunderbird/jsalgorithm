@@ -10,7 +10,10 @@ class SoloChessBoard {
   constructor(numOfPieces) {
     this.numOfPieces = numOfPieces;
     this.pieceInfos = {};
+    //cache to store the reachable squares for each piece and square combo
     this.reachableSquaresCache = {};
+    //cache to store solutions
+    this.solutionCache = {};
     this.maxNumOfpiecesOnBoard = 0;
   }
 
@@ -35,6 +38,21 @@ class SoloChessBoard {
     this.piecesInfos = [];
     this.numOfPiecesOnBoard = 0;
     this.pieceInfoMap = [];
+  }
+
+  addSolutionToCache(numOfPieces, solution) {
+    if (this.solutionCache.numOfPieces === undefined) {
+      this.solutionCache.numOfPieces = [];
+    }
+    this.solutionCache.numOfPieces.push(solution);
+  }
+
+  getEncodedCaptures(captures) {
+    return captures.map((capture) => {
+      const fromRowCol = `${capture.from.row}${capture.from.col}`;
+      const toRowCol = `${capture.to.row}${capture.to.col}`;
+      return `${capture.piece}${fromRowCol}:${toRowCol}`;
+    }).join(',');
   }
 
   /**
@@ -103,7 +121,7 @@ class SoloChessBoard {
       //make sure the source square is still inside board
       //also not in pawn promotion
       if (sourceSquare.row > 1 && sourceSquare.row <= 7 &&
-      !this.isPawnPromotion(piece, sourceSquare)) {
+        !this.isPawnPromotion(piece, sourceSquare)) {
         squares.push(sourceSquare);
       }
     } else {
@@ -284,6 +302,12 @@ class SoloChessBoard {
       if (this.numOfPiecesOnBoard === this.numOfPieces) {
         this.maxNumOfpiecesOnBoard = this.numOfPiecesOnBoard;
         this.solution.fen = arrToFen(this.board);
+        //now this solution is good, add it to the solution cache
+        this.addSolutionToCache(this.numOfPieces, {
+          numOfPieces: this.numOfPieces,
+          fen: this.solution.fen,
+          encodedCaptures: this.getEncodedCaptures(this.solution.captures)
+        });
         break;
       } else if( this.numOfPiecesOnBoard > this.maxNumOfpiecesOnBoard ) {
         this.maxNumOfpiecesOnBoard = this.numOfPiecesOnBoard;
@@ -340,6 +364,8 @@ const arrToFen = (arr) => {
 function generatePosition(numOfPieces) {
   const board = new SoloChessBoard(numOfPieces);
   board.generateSolution();
+  console.log(board.numOfPiecesOnBoard);
+  console.log(board.solutionCache);
 }
 
 /////////////////////// Main ///////////////////////////
