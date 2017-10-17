@@ -40,11 +40,15 @@ class SoloChessGame {
     this.pieceInfoMap = [];
   }
 
-  addSolutionToCache(numOfPieces, solution) {
-    if (this.solutionCache.numOfPieces === undefined) {
-      this.solutionCache.numOfPieces = [];
+  addSolutionToCache(solution) {
+    const numOfPieces = solution.numOfPieces;
+    if (this.solutionCache[numOfPieces] === undefined) {
+      this.solutionCache[numOfPieces] = [];
     }
-    this.solutionCache.numOfPieces.push(solution);
+    //we just need to store the encoded catpure string here
+    this.solutionCache[numOfPieces].push({
+      encodedCaptures: solution.encodedCaptures
+    });
   }
 
   getEncodedCaptures(captures) {
@@ -301,7 +305,7 @@ class SoloChessGame {
         this.maxNumOfpiecesOnBoard = this.numOfPiecesOnBoard;
         this.solution.fen = arrToFen(this.board);
         //now this solution is good, add it to the solution cache
-        this.addSolutionToCache(this.numOfPieces, {
+        this.addSolutionToCache({
           numOfPieces: this.numOfPieces,
           fen: this.solution.fen,
           encodedCaptures: this.getEncodedCaptures(this.solution.captures)
@@ -309,16 +313,20 @@ class SoloChessGame {
         break;
       } else if( this.numOfPiecesOnBoard > this.maxNumOfpiecesOnBoard ) {
         this.maxNumOfpiecesOnBoard = this.numOfPiecesOnBoard;
-        this.solution.fen = arrToFen(this.board);
       }
     }
 
     console.log(this.solution.captures);
     console.log(this.board);
-    return this.solution;
+    return arrToFen(this.board);
   }
 
   generatePositionv2() {
+    /**
+     * Algorithm overview
+     * 1. We will first generate a root node
+     * 2.
+     */
   }
 }
 
