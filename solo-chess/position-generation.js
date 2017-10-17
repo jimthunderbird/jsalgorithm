@@ -5,7 +5,7 @@ const JCE = require('../jsChessEngine/bin/JCE.js');
  * 2. King should be the last one to stand
  * 3. There should be only one king in each challenge
  */
-class SoloChessBoard {
+class SoloChessGame {
 
   constructor(numOfPieces) {
     this.numOfPieces = numOfPieces;
@@ -317,6 +317,9 @@ class SoloChessBoard {
     console.log(this.board);
     return this.solution;
   }
+
+  generatePositionv2() {
+  }
 }
 
 const { PAWN, KNIGHT, BISHOP, ROOK, QUEEN, KING } = {
@@ -360,7 +363,7 @@ const arrToFen = (arr) => {
 };
 
 function generatePosition(numOfPieces) {
-  const board = new SoloChessBoard(numOfPieces);
+  const board = new SoloChessGame(numOfPieces);
   board.generateSolution();
   console.log(board.numOfPiecesOnBoard);
   console.log(board.solutionCache);
