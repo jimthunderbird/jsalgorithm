@@ -307,7 +307,6 @@ class SoloChessGame {
         //now this solution is good, add it to the solution cache
         this.addSolutionToCache({
           numOfPieces: this.numOfPieces,
-          fen: this.solution.fen,
           encodedCaptures: this.getEncodedCaptures(this.solution.captures)
         });
         break;
