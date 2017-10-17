@@ -51,7 +51,7 @@ class SoloChessBoard {
     return captures.map((capture) => {
       const fromRowCol = `${capture.from.row}${capture.from.col}`;
       const toRowCol = `${capture.to.row}${capture.to.col}`;
-      return `${capture.piece}${fromRowCol}:${toRowCol}`;
+      return `${capture.piece}:${fromRowCol}:${toRowCol}`;
     }).join(',');
   }
 
@@ -197,7 +197,6 @@ class SoloChessBoard {
     solution.lastPiece = rootPiece;
 
     let piece;
-    let previousPiece = '';
 
     //first, add all child pieces
     for (let i = 0; i < numOfPieces - 1; i += 1) {
@@ -211,7 +210,6 @@ class SoloChessBoard {
         const result = this.placePieceAroundSquare(piece, rootSquare);
         if (result.success) {
           solution.lastPiece = piece;
-          previousPiece = piece;
           //now generate the capture
           this.solution.captures.push({
             piece: piece,
@@ -369,4 +367,4 @@ function generatePosition(numOfPieces) {
 }
 
 /////////////////////// Main ///////////////////////////
-generatePosition(8);
+generatePosition(6);
