@@ -1,11 +1,10 @@
+const JCE = require('../jsChessEngine/bin/JCE.js');
 /**
  * Solo Chess Rules:
  * 1. Any pieces can not move more than 2 times
  * 2. King should be the last one to stand
  * 3. There should be only one king in each challenge
  */
-const JCE = require('../jsChessEngine/bin/JCE.js');
-
 class SoloChessBoard {
 
   constructor(numOfPieces) {
@@ -216,7 +215,7 @@ class SoloChessBoard {
 
       this.hasKing = Math.round(Math.random()); //will this solution contains king?
 
-      //divide all nodes among 2 trees
+      //divide all pieces among 2 trees
       const numOfPieces1 = 1 + Math.floor(Math.random() * (this.numOfPieces - 1));
       const numOfPieces2 = this.numOfPieces - numOfPieces1;
 
