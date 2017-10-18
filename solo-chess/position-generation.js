@@ -271,7 +271,7 @@ class SoloChessGame {
           nextRootPiece = this.getRandomPiece();
         }
 
-        //we need to make sure the last piece can be reach root square from the next root square
+        //we need to make sure the last piece can reach root square from the next root square
         reachableSquares = this.getReachableSquaresOfPiece(this.lastPiece, rootSquare);
 
         if (reachableSquares.length === 0) {
@@ -290,12 +290,6 @@ class SoloChessGame {
         break;
       }
 
-      //now we have the context:
-      //1. rootPiece,
-      //2. rootSquare,
-      //3. nextRootPiece,
-      //4. nextRootSquare
-
       let currentLastPiece;
       //the first tree will not have king
       currentLastPiece = this.generateSolutionWithRootPiece(
@@ -313,16 +307,22 @@ class SoloChessGame {
         continue;
       }
 
+      //finally add the next root and the root
+      //we need to make sure we can really add next root piece into the board
+      if (this.board[nextRootSquare.row][nextRootSquare.col] !== '-') {
+        continue;
+      }
+
+      this.addPieceToSquare(nextRootPiece, nextRootSquare);
+      this.addPieceToSquare(rootPiece, rootSquare);
+
+      //now we have both next root piece and the root piece, add the capture information
       //simply record capture from next root node to the first root node
       this.solution.captures.push({
         piece: currentLastPiece,
         from: nextRootSquare,
         to: rootSquare
       });
-
-      //finally add the next root and the root
-      this.addPieceToSquare(nextRootPiece, nextRootSquare);
-      this.addPieceToSquare(rootPiece, rootSquare);
 
       this.solution.fen = arrToFen(this.board);
 
@@ -343,6 +343,9 @@ class SoloChessGame {
 
     console.log(this.solution.captures);
     console.log(this.board);
+    console.log(this.solution.fen);
+    console.log(this.numOfPiecesOnBoard);
+
     return this.solution.fen;
   }
 }
@@ -384,7 +387,7 @@ const arrToFen = (arr) => {
     return strRow;
   }).join('/');
 
-  return `${pieces} w KQkq - 0 1`;
+  return `${pieces}`;
 };
 
 function generatePosition(numOfPieces) {
@@ -393,4 +396,4 @@ function generatePosition(numOfPieces) {
 }
 
 /////////////////////// Main ///////////////////////////
-generatePosition(6);
+generatePosition(35);
