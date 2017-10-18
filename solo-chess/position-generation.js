@@ -241,7 +241,6 @@ class SoloChessGame {
       const numOfPieces1 = 1 + Math.floor(Math.random() * (this.numOfPieces - 1));
       const numOfPieces2 = this.numOfPieces - numOfPieces1;
 
-      //randomly generate the rootSquare
       let rootSquare;
       let rootPiece;
       let nextRootPiece;
@@ -275,14 +274,20 @@ class SoloChessGame {
         //we need to make sure the last piece can be reach root square from the next root square
         reachableSquares = this.getReachableSquaresOfPiece(this.lastPiece, rootSquare);
 
+        if (reachableSquares.length === 0) {
+          continue;
+        }
+
+        //do not select pawn as root
+        if (rootPiece === PAWN || nextRootPiece === PAWN) {
+          continue;
+        }
+
         nextRootSquare = reachableSquares[
           Math.floor(Math.random() * reachableSquares.length)
         ];
 
-        //do not select pawn as root
-        if (!(rootPiece === PAWN) && !(nextRootPiece === PAWN)) {
-          break;
-        }
+        break;
       }
 
       //now we have the context:
@@ -304,9 +309,9 @@ class SoloChessGame {
         nextRootSquare,
         numOfPieces2, this.hasKing).lastPiece;
 
-      //at the end, add the 2 root nodes
-      this.addPieceToSquare(nextRootPiece, nextRootSquare);
-      this.addPieceToSquare(rootPiece, rootSquare);
+      if (currentLastPiece !== this.lastPiece) {
+        continue;
+      }
 
       //simply record capture from next root node to the first root node
       this.solution.captures.push({
@@ -315,12 +320,19 @@ class SoloChessGame {
         to: rootSquare
       });
 
+      //finally add the next root and the root
+      this.addPieceToSquare(nextRootPiece, nextRootSquare);
+      this.addPieceToSquare(rootPiece, rootSquare);
+
+      this.solution.fen = arrToFen(this.board);
+
       if (this.numOfPiecesOnBoard === this.numOfPieces) {
+        console.log('found solution');
         this.maxNumOfpiecesOnBoard = this.numOfPiecesOnBoard;
-        this.solution.fen = arrToFen(this.board);
         //now this solution is good, add it to the solution cache
         this.addSolutionToCache({
           numOfPieces: this.numOfPieces,
+          fen: this.solution.fen,
           encodedCaptures: this.getEncodedCaptures(this.solution.captures)
         });
         break;
@@ -331,7 +343,7 @@ class SoloChessGame {
 
     console.log(this.solution.captures);
     console.log(this.board);
-    return arrToFen(this.board);
+    return this.solution.fen;
   }
 }
 
@@ -378,8 +390,6 @@ const arrToFen = (arr) => {
 function generatePosition(numOfPieces) {
   const board = new SoloChessGame(numOfPieces);
   board.generateSolution();
-  console.log(board.numOfPiecesOnBoard);
-  console.log(board.solutionCache);
 }
 
 /////////////////////// Main ///////////////////////////
