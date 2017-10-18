@@ -165,8 +165,10 @@ class SoloChessGame {
       }];
       //make sure the source square is still inside board
       //also not in pawn promotion
+      //and this square is an empty square
       if (sourceSquare.row > 1 && sourceSquare.row <= 7 &&
-        !this.isPawnPromotion(piece, sourceSquare)) {
+        !this.isPawnPromotion(piece, sourceSquare) &&
+        this.board[sourceSquare.row][sourceSquare.col] === '-') {
         squares.push(sourceSquare);
       }
     } else {
@@ -228,11 +230,13 @@ class SoloChessGame {
   generateSolutionWithRootPiece(rootPiece, rootSquare, numOfPieces, hasKing) {
     const solution = {};
     solution.lastPiece = rootPiece;
+    solution.valid = true;
 
     let piece;
 
     //first, add all child pieces
     for (let i = 0; i < numOfPieces - 1; i += 1) {
+      let placementSuccess = false;
       for (let it = 1; it <= 200; it += 1) { //it means inner trys
         //when this tree has king and this node is the last node in the tree
         //this node is the very last piece
@@ -245,6 +249,7 @@ class SoloChessGame {
         const from = result.square;
         const to = rootSquare;
         if (result.success) {
+          placementSuccess = true;
           solution.lastPiece = piece;
           //now generate the capture
           this.solution.captures.push({
@@ -254,6 +259,10 @@ class SoloChessGame {
           });
           break;
         }
+      }
+      if (!placementSuccess) {
+        solution.valid = false;
+        break;
       }
     }
 
@@ -318,22 +327,22 @@ class SoloChessGame {
       //now we have the root piece, add it first
       this.addPieceToSquare(rootPiece, rootSquare);
 
-      let currentLastPiece;
       //the first tree will not have king
-      currentLastPiece = this.generateSolutionWithRootPiece(
+      const solution1 = this.generateSolutionWithRootPiece(
         rootPiece,
         rootSquare,
         numOfPieces1,
-        false).lastPiece;
+        false);
       //the second tree might have king
-      currentLastPiece = this.generateSolutionWithRootPiece(
+      const solution2 = this.generateSolutionWithRootPiece(
         nextRootPiece,
         nextRootSquare,
-        numOfPieces2, this.hasKing).lastPiece;
+        numOfPieces2, this.hasKing);
 
-      //make sure the current last piece is really the last piece
+      //make sure both solutions are ok
       //and we can really add next root piece into the board
-      if (currentLastPiece === this.lastPiece &&
+      if (solution1.valid &&
+        solution2.valid &&
         this.board[nextRootSquare.row][nextRootSquare.col] === '-'
       ) {
         //now we can safely add the next root
@@ -342,7 +351,7 @@ class SoloChessGame {
         //now we have both next root piece and the root piece, add the capture information
         //simply record capture from next root node to the first root node
         this.solution.captures.push({
-          piece: currentLastPiece,
+          piece: solution2.lastPiece,
           from: nextRootSquare,
           to: rootSquare
         });
@@ -364,9 +373,11 @@ class SoloChessGame {
       }
     }
 
+    console.log(this.numOfPiecesOnBoard);
+    console.log(this.getEncodedCaptures(this.solution.captures));
     return this.solution;
   }
 }
 
 /////////////////////// Main ///////////////////////////
-console.log(generatePosition(3));
+console.log(generatePosition(7));
