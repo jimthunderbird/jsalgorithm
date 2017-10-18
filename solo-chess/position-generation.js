@@ -346,7 +346,7 @@ class SoloChessGame {
     console.log(this.solution.fen);
     console.log(this.numOfPiecesOnBoard);
 
-    return this.solution.fen;
+    return `${this.solution.fen} w KQkq - 0 1`;
   }
 }
 
