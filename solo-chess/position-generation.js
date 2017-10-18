@@ -205,10 +205,11 @@ class SoloChessGame {
     //first, add all child pieces
     for (let i = 0; i < numOfPieces - 1; i += 1) {
       for (let it = 1; it <= 200; it += 1) { //it means inner trys
-        // the last piece to stay should be a king
+        //when this tree has king and this node is the last node in the tree
+        //this node is the very last piece
         if (i === numOfPieces - 2 && hasKing) {
-          piece = KING; //we just simpy add king at last
-        } else { //the new piece should not capture king
+          piece = this.lastPiece;
+        } else {
           piece = this.getRandomPiece();
         }
         const result = this.placePieceAroundSquare(piece, rootSquare);
@@ -245,21 +246,34 @@ class SoloChessGame {
       let rootPiece;
       let nextRootPiece;
       let nextRootSquare;
+      let lastPiece;
       let reachableSquares;
 
       for (;;) {
+        //generate the root piece and square
         //the first tree does not have king
         rootPiece = this.getRandomPiece();
         rootSquare = this.getRandomSquare();
-        reachableSquares = this.getReachableSquaresOfPiece(rootPiece, rootSquare);
+
+        //now pre-determine the last piece
+        if (this.hasKing) { //if we have king, last piece will always be king
+          this.lastPiece = KING;
+        } else {
+          this.lastPiece = this.getRandomPiece();
+        }
 
         //the second tree might have king
+        //generate the next root piece, this piece will not move
+        //special case, if the tree has just one piece
+        //the next root piece will just be the last piece
         if (numOfPieces2 === 1 && this.hasKing) {
-          //special case, if the tree has just one piece
-          nextRootPiece = KING;
-        } else {
+          nextRootPiece = this.lastPiece;
+        } else { //otherwise, just randomly generate a piece for the next root
           nextRootPiece = this.getRandomPiece();
         }
+
+        //we need to make sure the last piece can be reach root square from the next root square
+        reachableSquares = this.getReachableSquaresOfPiece(this.lastPiece, rootSquare);
 
         nextRootSquare = reachableSquares[
           Math.floor(Math.random() * reachableSquares.length)
@@ -277,26 +291,26 @@ class SoloChessGame {
       //3. nextRootPiece,
       //4. nextRootSquare
 
-      let lastPiece;
+      let currentLastPiece;
       //the first tree will not have king
-      lastPiece = this.generateSolutionWithRootPiece(
+      currentLastPiece = this.generateSolutionWithRootPiece(
         rootPiece,
         rootSquare,
         numOfPieces1,
         false).lastPiece;
       //the second tree might have king
-      lastPiece = this.generateSolutionWithRootPiece(
+      currentLastPiece = this.generateSolutionWithRootPiece(
         nextRootPiece,
         nextRootSquare,
         numOfPieces2, this.hasKing).lastPiece;
 
       //at the end, add the 2 root nodes
-      this.addPieceToSquare(rootPiece, rootSquare);
       this.addPieceToSquare(nextRootPiece, nextRootSquare);
+      this.addPieceToSquare(rootPiece, rootSquare);
 
       //simply record capture from next root node to the first root node
       this.solution.captures.push({
-        piece: lastPiece,
+        piece: currentLastPiece,
         from: nextRootSquare,
         to: rootSquare
       });
@@ -318,14 +332,6 @@ class SoloChessGame {
     console.log(this.solution.captures);
     console.log(this.board);
     return arrToFen(this.board);
-  }
-
-  generatePositionv2() {
-    /**
-     * Algorithm overview
-     * 1. We will first generate a root node
-     * 2.
-     */
   }
 }
 
