@@ -79,7 +79,6 @@ class SoloChessGame {
    */
   clear() {
     this.board = this.getEmptyBoard();
-    this.piecesInfos = [];
     this.numOfPiecesOnBoard = 0;
     this.pieceInfoMap = [];
   }
@@ -223,7 +222,6 @@ class SoloChessGame {
 
   addPieceToSquare(piece, square) {
     this.board[square.row][square.col] = piece;
-    const key = `${square.row}${square.col}`;
     this.numOfPiecesOnBoard += 1;
   }
 
@@ -317,6 +315,9 @@ class SoloChessGame {
         }
       }
 
+      //now we have the root piece, add it first
+      this.addPieceToSquare(rootPiece, rootSquare);
+
       let currentLastPiece;
       //the first tree will not have king
       currentLastPiece = this.generateSolutionWithRootPiece(
@@ -335,8 +336,8 @@ class SoloChessGame {
       if (currentLastPiece === this.lastPiece &&
         this.board[nextRootSquare.row][nextRootSquare.col] === '-'
       ) {
+        //now we can safely add the next root
         this.addPieceToSquare(nextRootPiece, nextRootSquare);
-        this.addPieceToSquare(rootPiece, rootSquare);
 
         //now we have both next root piece and the root piece, add the capture information
         //simply record capture from next root node to the first root node
@@ -363,9 +364,9 @@ class SoloChessGame {
       }
     }
 
-    return `${this.solution.fen} w KQkq - 0 1`;
+    return this.solution;
   }
 }
 
 /////////////////////// Main ///////////////////////////
-generatePosition(25);
+console.log(generatePosition(3));
