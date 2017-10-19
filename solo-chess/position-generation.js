@@ -248,17 +248,19 @@ class SoloChessGame {
         //add this empty square to the possible affected squares
         possibleAffectedSquares.push({ row, col });
       }
-      if (result) {
-        //now we can really make a move
-        //add the piece
-        this.addPieceToSquare(piece, fromSquare);
-        //mark the affected squares
-        //we can really add
-        possibleAffectedSquares.forEach((square) => {
-          this.board[square.row][square.col] = '*';
-        });
-      }
     }
+
+    if (result) {
+      //now we can really make a move
+      //add the piece if the square is empty
+      this.addPieceToSquare(piece, fromSquare);
+      //mark the affected squares
+      //we can really add
+      possibleAffectedSquares.forEach((square) => {
+        this.board[square.row][square.col] = '*';
+      });
+    }
+
     return result;
   }
 
@@ -335,11 +337,15 @@ class SoloChessGame {
     //just do some random fun stuffs here
     this.addPieceToSquare('N*', { row: 2, col: 2 }); //root
     for (;;) {
-      const fromSquare = this.getRandomSquare();
-      const piece = this.getRandomPiece();
+      let fromSquare = this.getRandomSquare();
+      let piece;
+      if (this.numOfPiecesOnBoard < 12) {
+        piece = this.getRandomPiece();
+      } else {
+        piece = KING;
+      }
       this.makeSudoMove(piece, fromSquare, { row: 2, col: 2 });
-      console.log(this.numOfPiecesOnBoard);
-      if (this.numOfPiecesOnBoard === 10) {
+      if (this.numOfPiecesOnBoard === 13) {
         break;
       }
     }
