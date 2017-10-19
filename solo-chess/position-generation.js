@@ -339,13 +339,18 @@ class SoloChessGame {
     for (;;) {
       let fromSquare = this.getRandomSquare();
       let piece;
-      if (this.numOfPiecesOnBoard < 12) {
+      if (this.numOfPiecesOnBoard < 5) {
         piece = this.getRandomPiece();
+        this.makeSudoMove(piece, fromSquare, { row: 2, col: 2 });
       } else {
         piece = KING;
+        const nextFromSquare = this.getRandomSquare();
+        console.log(nextFromSquare);
+        console.log(fromSquare);
+        this.makeSudoMove(piece, nextFromSquare, fromSquare);
+        this.makeSudoMove(piece, fromSquare, { row: 2, col: 2 });
       }
-      this.makeSudoMove(piece, fromSquare, { row: 2, col: 2 });
-      if (this.numOfPiecesOnBoard === 13) {
+      if (this.numOfPiecesOnBoard === 6) {
         break;
       }
     }
