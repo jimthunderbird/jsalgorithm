@@ -114,22 +114,27 @@ class SoloChessGame {
           row: 8 - coordinate[1],
           col: coordinate.charCodeAt(0) - 97
         }));
+
       this.reachableSquaresCache[key] = reachableSquares;
     }
     return this.reachableSquaresCache[key];
   }
 
+  /**
+   * get the affected squares on piece move
+   */
   getAffectedSquaresOnPieceMove(piece, fromSquare, toSquare) {
-    const squares = [];
-    //only queen, bishop, rook should have affected squares
+    let affectedSquares = [];
+    //scan all the squares along the lines between fromSquare and toSquare
+    //only perform the scan when the piece is queen, bishop or rook
     if ([QUEEN, BISHOP, ROOK].includes(piece)) {
       const amplifier = Math.max(
         Math.abs(toSquare.row - fromSquare.row),
         Math.abs(toSquare.col - fromSquare.col)
       );
       const delta = [
-        (fromSquare.row - toSquare.row) / amplifier,
-        (fromSquare.col - toSquare.col) / amplifier
+        Math.floor((fromSquare.row - toSquare.row) / amplifier),
+        Math.floor((fromSquare.col - toSquare.col) / amplifier)
       ];
       let row = fromSquare.row;
       let col = fromSquare.col;
@@ -137,13 +142,26 @@ class SoloChessGame {
         row -= delta[0];
         col -= delta[1];
         if (Math.abs(row - toSquare.row) === 0 && Math.abs(col - toSquare.col) === 0) {
+          //we have reached the toSquare, stop
           break;
-        } else if (this.board[row][col] === '-') { //this is really an empty square, add it
-          squares.push({ row, col });
+        } else {
+          affectedSquares.push({ row, col });
         }
       }
     }
-    return squares;
+    return affectedSquares;
+  }
+
+  /**
+   * mark the affected squares
+   */
+  markAffectedSquares(affectedSquares) {
+    affectedSquares.forEach((affectedSquare) => {
+      //only mark the empty squares
+      if (this.board[affectedSquare.row][affectedSquare.col] === '-') {
+        this.board[affectedSquare.row][affectedSquare.col] = '*';
+      }
+    });
   }
 
   /**
@@ -175,29 +193,6 @@ class SoloChessGame {
   }
 
   /**
-   * place a piece around a specific square
-   */
-  placePieceAroundSquare(piece, square) {
-    const result = {};
-    const sourceSquares = this.getAvailableSourceSquaresForPlacement(piece, square);
-    if (sourceSquares.length === 0) {
-      result.success = false;
-      return result;
-    }
-    const sourceSquare = sourceSquares[Math.floor(Math.random() * sourceSquares.length)];
-    this.addPieceToSquare(piece, sourceSquare);
-    const affectedSquares = this.getAffectedSquaresOnPieceMove(piece, sourceSquare, square);
-
-    affectedSquares.forEach((affectedSquare) => {
-      this.board[affectedSquare.row][affectedSquare.col] = '*';
-    });
-
-    result.success = true;
-    result.square = sourceSquare;
-    return result;
-  }
-
-  /**
    * make a sudo move and mark affected squares on the board
    */
   makeSudoMove(piece, fromSquare, toSquare) {
@@ -223,38 +218,6 @@ class SoloChessGame {
       return result;
     }
 
-    let possibleAffectedSquares = [];
-    //only queen, bishop, rook needs to check if in-between there are:
-    //1. blocking pieces
-    //2. affected squares from previous added pieces
-    if ([QUEEN, BISHOP, ROOK].includes(piece)) {
-      const amplifier = Math.max(
-        Math.abs(toSquare.row - fromSquare.row),
-        Math.abs(toSquare.col - fromSquare.col)
-      );
-      const delta = [
-        (fromSquare.row - toSquare.row) / amplifier,
-        (fromSquare.col - toSquare.col) / amplifier
-      ];
-      let row = fromSquare.row;
-      let col = fromSquare.col;
-      for (;;) {
-        row -= delta[0];
-        col -= delta[1];
-
-        //there is a blocking pieces or a square affected by other pieces
-        if (Math.abs(row - toSquare.row) === 0 &&
-          Math.abs(col - toSquare.col) === 0) {
-          break;
-        } else if (this.board[row][col] !== '-') {
-          //there is a blocking pieces or a square affected by other pieces
-          break;
-        }
-        //add this empty square to the possible affected squares
-        possibleAffectedSquares.push({ row, col });
-      }
-    }
-
     if (result) {
       //now we can really make a move
       //now this is an empty square
@@ -262,10 +225,8 @@ class SoloChessGame {
       this.addPieceToSquare(piece, fromSquare);
       //mark the affected squares
       //only mark the square when it's an empty square
-      possibleAffectedSquares.forEach((square) => {
-        if (this.board[square.row][square.col] === '-') {
-          this.board[square.row][square.col] = '*';
-        }
+      this.getAffectedSquaresOnPieceMove(piece, fromSquare, toSquare).forEach((square) => {
+        this.board[square.row][square.col] = '*';
       });
       //add captures
       this.solution.captures.push({
@@ -357,21 +318,33 @@ class SoloChessGame {
     this.addPieceToSquare(rootPiece + '*', rootSquare); //root
     let piece;
     piece = this.getRandomPiece();
-    //construct a consecutive move
-    const sourceSquares = this.getAvailableSourceSquaresForPlacement(piece, rootSquare);
+    //construct a consecutive move, s2->s1->root
+    const distanceToRoot = 2; //this is the number of consecutive moves to the root
+    let sourceSquares = this.getAvailableSourceSquaresForPlacement(piece, rootSquare);
     if (sourceSquares.length >= 2) {
+      sourceSquares = shuffleArr(sourceSquares);
       for (let i = 0; i < sourceSquares.length; i += 1) {
         for (let j = i + 1; j < sourceSquares.length; j += 1) {
-          const fromSquare = sourceSquares[i];
-          const toSquare = sourceSquares[j];
-          const possibleFromSquare = this.getAvailableSourceSquaresForPlacement(piece, toSquare);
-          for (let k = 0; k < possibleFromSquare.length; k += 1) {
-            if (possibleFromSquare[k].row === fromSquare.row &&
-              fromSquare.col === fromSquare.col) {
-              this.addPieceToSquare(piece, fromSquare);
-              this.addPieceToSquare(this.getRandomPiece(), toSquare);
-              console.log(piece);
-              console.log([fromSquare, toSquare, rootSquare]);
+          const s2 = sourceSquares[i];
+          const s1 = sourceSquares[j];
+          const possibleFromSquare = this.getAvailableSourceSquaresForPlacement(piece, s1);
+
+          if (possibleFromSquare.some(possibleFromSquare =>
+            possibleFromSquare.row === s2.row &&
+            possibleFromSquare.col === s2.col)) {
+            //special case:
+            //make sure the root square does not sit in between s1 and s2
+            let affectedSquares = this.getAffectedSquaresOnPieceMove(piece, s2, s1);
+            if (!affectedSquares.some(
+              affectedSquare =>
+              affectedSquare.row === rootSquare.row &&
+              affectedSquare.col === rootSquare.col)) {
+              this.addPieceToSquare(piece, s2);
+              this.markAffectedSquares(affectedSquares);
+              this.addPieceToSquare(this.getRandomPiece(), s1);
+              affectedSquares = this.getAffectedSquaresOnPieceMove(piece, s1, rootSquare)
+              this.markAffectedSquares(affectedSquares);
+              console.log([s2, s1, rootSquare]);
               console.log(this.board);
               return;
             }
@@ -381,6 +354,7 @@ class SoloChessGame {
     }
     return;
 
+    /*
     this.solution = {};
     for (let t = 1; t <= 1000; t += 1) { //t means outer trys
       this.solution.captures = [];
@@ -388,7 +362,7 @@ class SoloChessGame {
 
       this.hasKing = Math.round(Math.random()); //will this solution contains king?
 
-      //divide all pieces among 2 trees
+    //divide all pieces among 2 trees
       const numOfPieces1 = 1 + Math.floor(Math.random() * (this.numOfPieces - 1));
       const numOfPieces2 = this.numOfPieces - numOfPieces1;
 
@@ -399,29 +373,29 @@ class SoloChessGame {
       let reachableSquares;
 
       for (;;) {
-        //generate the root piece and square
-        //the first tree does not have king
+    //generate the root piece and square
+    //the first tree does not have king
         rootPiece = this.getRandomPiece();
         rootSquare = this.getRandomSquare();
 
-        //now pre-determine the last piece
+    //now pre-determine the last piece
         if (this.hasKing) { //if we have king, last piece will always be king
           this.lastPiece = KING;
         } else {
           this.lastPiece = this.getRandomPiece();
         }
 
-        //the second tree might have king
-        //generate the next root piece, this piece will not move
-        //special case, if the tree has just one piece
-        //the next root piece will just be the last piece
+    //the second tree might have king
+    //generate the next root piece, this piece will not move
+    //special case, if the tree has just one piece
+    //the next root piece will just be the last piece
         if (numOfPieces2 === 1 && this.hasKing) {
           nextRootPiece = this.lastPiece;
         } else { //otherwise, just randomly generate a piece for the next root
           nextRootPiece = this.getRandomPiece();
         }
 
-        //we need to make sure the last piece can reach root square from the next root square
+    //we need to make sure the last piece can reach root square from the next root square
         reachableSquares = this.getReachableSquaresOfPiece(this.lastPiece, rootSquare);
 
         if (reachableSquares.length > 0 &&
@@ -435,32 +409,32 @@ class SoloChessGame {
         }
       }
 
-      //now we have the root piece, add it first
+    //now we have the root piece, add it first
       this.addPieceToSquare(rootPiece, rootSquare);
 
-      //the first tree will not have king
+    //the first tree will not have king
       const solution1 = this.generateSolutionWithRootPiece(
         rootPiece,
         rootSquare,
         numOfPieces1,
         false);
-      //the second tree might have king
+    //the second tree might have king
       const solution2 = this.generateSolutionWithRootPiece(
         nextRootPiece,
         nextRootSquare,
         numOfPieces2, this.hasKing);
 
-      //make sure both solutions are ok
-      //and we can really add next root piece into the board
+    //make sure both solutions are ok
+    //and we can really add next root piece into the board
       if (solution1.valid &&
         solution2.valid &&
         this.board[nextRootSquare.row][nextRootSquare.col] === '-'
       ) {
-        //now we can safely add the next root
+    //now we can safely add the next root
         this.addPieceToSquare(nextRootPiece, nextRootSquare);
 
-        //now we have both next root piece and the root piece, add the capture information
-        //simply record capture from next root node to the first root node
+    //now we have both next root piece and the root piece, add the capture information
+    //simply record capture from next root node to the first root node
         this.solution.captures.push({
           piece: solution2.lastPiece,
           from: nextRootSquare,
@@ -471,7 +445,7 @@ class SoloChessGame {
 
         if (this.numOfPiecesOnBoard === this.numOfPieces) {
           this.maxNumOfpiecesOnBoard = this.numOfPiecesOnBoard;
-          //now this solution is good, add it to the solution cache
+    //now this solution is good, add it to the solution cache
           this.addSolutionToCache({
             numOfPieces: this.numOfPieces,
             fen: this.solution.fen,
@@ -488,6 +462,7 @@ class SoloChessGame {
     console.log(this.numOfPiecesOnBoard);
     console.log(this.getEncodedCaptures(this.solution.captures));
     return this.solution;
+    */
   }
 }
 
