@@ -209,6 +209,12 @@ class SoloChessGame {
       return result;
     }
 
+    //if the from square and to square overlap, do not move
+    if (fromSquare.row === toSquare.row && fromSquare.col === toSquare.col) {
+      result = false;
+      return result;
+    }
+
     //for all non-pawn pieces, see if the piece can move from the toSquare to fromSquare
     //place the piece on toSquare
     if (!this.getAvailableSourceSquaresForPlacement(piece, toSquare)
@@ -244,7 +250,6 @@ class SoloChessGame {
           //there is a blocking pieces or a square affected by other pieces
           break;
         }
-        //now this is an empty square
         //add this empty square to the possible affected squares
         possibleAffectedSquares.push({ row, col });
       }
@@ -252,12 +257,21 @@ class SoloChessGame {
 
     if (result) {
       //now we can really make a move
-      //add the piece if the square is empty
+      //now this is an empty square
+      //add the piece to the square
       this.addPieceToSquare(piece, fromSquare);
       //mark the affected squares
-      //we can really add
+      //only mark the square when it's an empty square
       possibleAffectedSquares.forEach((square) => {
-        this.board[square.row][square.col] = '*';
+        if (this.board[square.row][square.col] === '-') {
+          this.board[square.row][square.col] = '*';
+        }
+      });
+      //add captures
+      this.solution.captures.push({
+        piece,
+        fromSquare,
+        toSquare
       });
     }
 
@@ -331,30 +345,40 @@ class SoloChessGame {
   }
 
   generateSolution() {
-    this.board = this.getEmptyBoard();
-    this.numOfPieces = 0;
-    this.numOfPiecesOnBoard = 0;
+    this.solution = {};
+    this.solution.captures = [];
     //just do some random fun stuffs here
-    this.addPieceToSquare('N*', { row: 2, col: 2 }); //root
-    for (;;) {
-      let fromSquare = this.getRandomSquare();
-      let piece;
-      if (this.numOfPiecesOnBoard < 5) {
-        piece = this.getRandomPiece();
-        this.makeSudoMove(piece, fromSquare, { row: 2, col: 2 });
-      } else {
-        piece = KING;
-        const nextFromSquare = this.getRandomSquare();
-        console.log(nextFromSquare);
-        console.log(fromSquare);
-        this.makeSudoMove(piece, nextFromSquare, fromSquare);
-        this.makeSudoMove(piece, fromSquare, { row: 2, col: 2 });
-      }
-      if (this.numOfPiecesOnBoard === 6) {
-        break;
+    //randomly generate a root piece and square
+    this.board = this.getEmptyBoard();
+    this.numOfPiecesOnBoard = 0;
+    this.solution.valid = false;
+    const rootPiece = this.getRandomPiece();
+    const rootSquare = this.getRandomSquare();
+    this.addPieceToSquare(rootPiece + '*', rootSquare); //root
+    let piece;
+    piece = this.getRandomPiece();
+    //construct a consecutive move
+    const sourceSquares = this.getAvailableSourceSquaresForPlacement(piece, rootSquare);
+    if (sourceSquares.length >= 2) {
+      for (let i = 0; i < sourceSquares.length; i += 1) {
+        for (let j = i + 1; j < sourceSquares.length; j += 1) {
+          const fromSquare = sourceSquares[i];
+          const toSquare = sourceSquares[j];
+          const possibleFromSquare = this.getAvailableSourceSquaresForPlacement(piece, toSquare);
+          for (let k = 0; k < possibleFromSquare.length; k += 1) {
+            if (possibleFromSquare[k].row === fromSquare.row &&
+              fromSquare.col === fromSquare.col) {
+              this.addPieceToSquare(piece, fromSquare);
+              this.addPieceToSquare(this.getRandomPiece(), toSquare);
+              console.log(piece);
+              console.log([fromSquare, toSquare, rootSquare]);
+              console.log(this.board);
+              return;
+            }
+          }
+        }
       }
     }
-    console.log(this.board);
     return;
 
     this.solution = {};
@@ -468,4 +492,4 @@ class SoloChessGame {
 }
 
 /////////////////////// Main ///////////////////////////
-generatePosition(7);
+generatePosition(4);
