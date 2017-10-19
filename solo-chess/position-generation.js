@@ -203,9 +203,16 @@ class SoloChessGame {
   makeSudoMove(piece, fromSquare, toSquare) {
     let result = true;
 
-    //first make sure the toSquare is reachable from the fromSquare
-    if (!this.getReachableSquaresOfPiece(piece, fromSquare)
-      .some(square => square.row === toSquare.row && square.col === toSquare.col)) {
+    //first of all, make sure the fromSquare is an empty square
+    if (this.board[fromSquare.row][fromSquare.col] !== '-') {
+      result = false;
+      return result;
+    }
+
+    //for all non-pawn pieces, see if the piece can move from the toSquare to fromSquare
+    //place the piece on toSquare
+    if (!this.getAvailableSourceSquaresForPlacement(piece, toSquare)
+      .some(square => square.row === fromSquare.row && square.col === fromSquare.col)) {
       result = false;
       return result;
     }
@@ -230,17 +237,21 @@ class SoloChessGame {
         col -= delta[1];
         if (Math.abs(row - toSquare.row) === 0 && Math.abs(col - toSquare.col) === 0) {
           break;
-        } else if (this.board[row][col] !== '-') { //there is a blocking pieces
+        } else if (this.board[row][col] !== '-') {
+          //there is a blocking pieces or a square affected by other pieces
           result = false;
-          //clear out the possible affected squares
-          possibleAffectedSquares = [];
           break;
         } else { //now this is an empty square
           //add this empty square to the possible affected squares
           possibleAffectedSquares.push({ row, col });
         }
       }
-      if (result) { //now we can really make a move, mark the affected squares
+      if (result) {
+        //now we can really make a move
+        //add the piece
+        this.addPieceToSquare(piece, fromSquare);
+        //mark the affected squares
+        //we can really add
         possibleAffectedSquares.forEach((square) => {
           this.board[square.row][square.col] = '*';
         });
@@ -319,9 +330,8 @@ class SoloChessGame {
     this.board = this.getEmptyBoard();
     this.numOfPieces = 0;
     //just do some random fun stuffs here
-    this.addPieceToSquare('P', { row: 3, col: 3 });
-    this.addPieceToSquare('Q', { row: 6, col: 6 });
-    if (this.makeSudoMove('Q', { row: 6, col: 6 }, { row: 4, col: 3 })) {
+    this.addPieceToSquare('P', { row: 2, col: 2 }); //root
+    if (this.makeSudoMove('Q', { row: 7, col: 7 }, { row: 2, col: 2 })) {
       console.log('valid move');
     } else {
       console.log('invalid move');
