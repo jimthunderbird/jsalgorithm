@@ -45,12 +45,6 @@ function generatePosition(numOfPieces) {
   return game.generateSolution();
 }
 
-/**
- * Solo Chess Rules:
- * 1. Any pieces can not move more than 2 times
- * 2. King should be the last one to stand
- * 3. There should be only one king in each challenge
- */
 class SoloChessGame {
   constructor(numOfPieces) {
     this.numOfPieces = numOfPieces;
@@ -204,6 +198,58 @@ class SoloChessGame {
   }
 
   /**
+   * make a sudo move and mark affected squares on the board
+   */
+  makeSudoMove(piece, fromSquare, toSquare) {
+    let result = true;
+
+    //first make sure the toSquare is reachable from the fromSquare
+    if (!this.getReachableSquaresOfPiece(piece, fromSquare)
+      .some(square => square.row === toSquare.row && square.col === toSquare.col)) {
+      result = false;
+      return result;
+    }
+
+    let possibleAffectedSquares = [];
+    //only queen, bishop, rook needs to check if in-between there are:
+    //1. blocking pieces
+    //2. affected squares from previous added pieces
+    if ([QUEEN, BISHOP, ROOK].includes(piece)) {
+      const amplifier = Math.max(
+        Math.abs(toSquare.row - fromSquare.row),
+        Math.abs(toSquare.col - fromSquare.col)
+      );
+      const delta = [
+        (fromSquare.row - toSquare.row) / amplifier,
+        (fromSquare.col - toSquare.col) / amplifier
+      ];
+      let row = fromSquare.row;
+      let col = fromSquare.col;
+      for (;;) {
+        row -= delta[0];
+        col -= delta[1];
+        if (Math.abs(row - toSquare.row) === 0 && Math.abs(col - toSquare.col) === 0) {
+          break;
+        } else if (this.board[row][col] !== '-') { //there is a blocking pieces
+          result = false;
+          //clear out the possible affected squares
+          possibleAffectedSquares = [];
+          break;
+        } else { //now this is an empty square
+          //add this empty square to the possible affected squares
+          possibleAffectedSquares.push({ row, col });
+        }
+      }
+      if (result) { //now we can really make a move, mark the affected squares
+        possibleAffectedSquares.forEach((square) => {
+          this.board[square.row][square.col] = '*';
+        });
+      }
+    }
+    return result;
+  }
+
+  /**
    * get a random piece
    * note: we exclude kings here
    */
@@ -246,9 +292,9 @@ class SoloChessGame {
           piece = this.getRandomPiece();
         }
         const result = this.placePieceAroundSquare(piece, rootSquare);
-        const from = result.square;
-        const to = rootSquare;
         if (result.success) {
+          const from = result.square;
+          const to = rootSquare;
           placementSuccess = true;
           solution.lastPiece = piece;
           //now generate the capture
@@ -270,6 +316,19 @@ class SoloChessGame {
   }
 
   generateSolution() {
+    this.board = this.getEmptyBoard();
+    this.numOfPieces = 0;
+    //just do some random fun stuffs here
+    this.addPieceToSquare('P', { row: 3, col: 3 });
+    this.addPieceToSquare('Q', { row: 6, col: 6 });
+    if (this.makeSudoMove('Q', { row: 6, col: 6 }, { row: 4, col: 3 })) {
+      console.log('valid move');
+    } else {
+      console.log('invalid move');
+    }
+    console.log(this.board);
+    return;
+
     this.solution = {};
     for (let t = 1; t <= 1000; t += 1) { //t means outer trys
       this.solution.captures = [];
@@ -373,6 +432,7 @@ class SoloChessGame {
       }
     }
 
+    console.log(this.board);
     console.log(this.numOfPiecesOnBoard);
     console.log(this.getEncodedCaptures(this.solution.captures));
     return this.solution;
@@ -380,4 +440,4 @@ class SoloChessGame {
 }
 
 /////////////////////// Main ///////////////////////////
-console.log(generatePosition(7));
+generatePosition(7);
