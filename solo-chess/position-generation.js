@@ -235,16 +235,18 @@ class SoloChessGame {
       for (;;) {
         row -= delta[0];
         col -= delta[1];
-        if (Math.abs(row - toSquare.row) === 0 && Math.abs(col - toSquare.col) === 0) {
+
+        //there is a blocking pieces or a square affected by other pieces
+        if (Math.abs(row - toSquare.row) === 0 &&
+          Math.abs(col - toSquare.col) === 0) {
           break;
         } else if (this.board[row][col] !== '-') {
           //there is a blocking pieces or a square affected by other pieces
-          result = false;
           break;
-        } else { //now this is an empty square
-          //add this empty square to the possible affected squares
-          possibleAffectedSquares.push({ row, col });
         }
+        //now this is an empty square
+        //add this empty square to the possible affected squares
+        possibleAffectedSquares.push({ row, col });
       }
       if (result) {
         //now we can really make a move
@@ -329,12 +331,17 @@ class SoloChessGame {
   generateSolution() {
     this.board = this.getEmptyBoard();
     this.numOfPieces = 0;
+    this.numOfPiecesOnBoard = 0;
     //just do some random fun stuffs here
-    this.addPieceToSquare('P', { row: 2, col: 2 }); //root
-    if (this.makeSudoMove('Q', { row: 7, col: 7 }, { row: 2, col: 2 })) {
-      console.log('valid move');
-    } else {
-      console.log('invalid move');
+    this.addPieceToSquare('N*', { row: 2, col: 2 }); //root
+    for (;;) {
+      const fromSquare = this.getRandomSquare();
+      const piece = this.getRandomPiece();
+      this.makeSudoMove(piece, fromSquare, { row: 2, col: 2 });
+      console.log(this.numOfPiecesOnBoard);
+      if (this.numOfPiecesOnBoard === 10) {
+        break;
+      }
     }
     console.log(this.board);
     return;
