@@ -98,9 +98,12 @@ class SoloChessGame {
 
   /**
    * check if the board is in pawn promotion state
+   * make it more strict so that pawn only be at rank 4 or further down
    */
   isPawnPromotion() {
-    return this.board[0].includes(PAWN) || this.board[1].includes(PAWN);
+    return this.board[0].includes(PAWN) ||
+      this.board[1].includes(PAWN) ||
+      this.board[2].includes(PAWN);
   }
 
   getReachableSquaresOfPiece(piece, square) {
@@ -300,7 +303,6 @@ class SoloChessGame {
             fen: this.solution.fen,
             encodedCaptures: this.getEncodedCaptures(this.solution.captures)
           });
-          console.log(this.board);
           return this.solution;
         }
       }
