@@ -193,50 +193,41 @@ class SoloChessGame {
   }
 
   /**
-   * make a sudo move and mark affected squares on the board
+   * play a piece around a targetSquare
    */
-  makeSudoMove(piece, fromSquare, toSquare) {
-    let result = true;
+  placePieceAroundSquare(piece, toSquare, distance = 1) {
+    let sourceSquares = this.getAvailableSourceSquaresForPlacement(piece, toSquare);
+    if (sourceSquares.length >= distance) {
+      sourceSquares = shuffleArr(sourceSquares);
+      for (let i = 0; i < sourceSquares.length; i += 1) {
+        for (let j = i + 1; j < sourceSquares.length; j += 1) {
+          const s2 = sourceSquares[i];
+          const s1 = sourceSquares[j];
+          const possibleFromSquare = this.getAvailableSourceSquaresForPlacement(piece, s1);
 
-    //first of all, make sure the fromSquare is an empty square
-    if (this.board[fromSquare.row][fromSquare.col] !== '-') {
-      result = false;
-      return result;
+          if (possibleFromSquare.some(possibleFromSquare =>
+            possibleFromSquare.row === s2.row &&
+            possibleFromSquare.col === s2.col)) {
+            //special case:
+            //make sure the root square does not sit in between s1 and s2
+            let affectedSquares = this.getAffectedSquaresOnPieceMove(piece, s2, s1);
+            if (!affectedSquares.some(
+              affectedSquare =>
+              affectedSquare.row === toSquare.row &&
+              affectedSquare.col === toSquare.col)) {
+              this.addPieceToSquare(piece, s2);
+              this.markAffectedSquares(affectedSquares);
+              this.addPieceToSquare(this.getRandomPiece(), s1);
+              affectedSquares = this.getAffectedSquaresOnPieceMove(piece, s1, toSquare)
+              this.markAffectedSquares(affectedSquares);
+              console.log([s2, s1, toSquare]);
+              console.log(this.board);
+              return;
+            }
+          }
+        }
+      }
     }
-
-    //if the from square and to square overlap, do not move
-    if (fromSquare.row === toSquare.row && fromSquare.col === toSquare.col) {
-      result = false;
-      return result;
-    }
-
-    //for all non-pawn pieces, see if the piece can move from the toSquare to fromSquare
-    //place the piece on toSquare
-    if (!this.getAvailableSourceSquaresForPlacement(piece, toSquare)
-      .some(square => square.row === fromSquare.row && square.col === fromSquare.col)) {
-      result = false;
-      return result;
-    }
-
-    if (result) {
-      //now we can really make a move
-      //now this is an empty square
-      //add the piece to the square
-      this.addPieceToSquare(piece, fromSquare);
-      //mark the affected squares
-      //only mark the square when it's an empty square
-      this.getAffectedSquaresOnPieceMove(piece, fromSquare, toSquare).forEach((square) => {
-        this.board[square.row][square.col] = '*';
-      });
-      //add captures
-      this.solution.captures.push({
-        piece,
-        fromSquare,
-        toSquare
-      });
-    }
-
-    return result;
   }
 
   /**
@@ -320,38 +311,7 @@ class SoloChessGame {
     piece = this.getRandomPiece();
     //construct a consecutive move, s2->s1->root
     const distanceToRoot = 2; //this is the number of consecutive moves to the root
-    let sourceSquares = this.getAvailableSourceSquaresForPlacement(piece, rootSquare);
-    if (sourceSquares.length >= 2) {
-      sourceSquares = shuffleArr(sourceSquares);
-      for (let i = 0; i < sourceSquares.length; i += 1) {
-        for (let j = i + 1; j < sourceSquares.length; j += 1) {
-          const s2 = sourceSquares[i];
-          const s1 = sourceSquares[j];
-          const possibleFromSquare = this.getAvailableSourceSquaresForPlacement(piece, s1);
-
-          if (possibleFromSquare.some(possibleFromSquare =>
-            possibleFromSquare.row === s2.row &&
-            possibleFromSquare.col === s2.col)) {
-            //special case:
-            //make sure the root square does not sit in between s1 and s2
-            let affectedSquares = this.getAffectedSquaresOnPieceMove(piece, s2, s1);
-            if (!affectedSquares.some(
-              affectedSquare =>
-              affectedSquare.row === rootSquare.row &&
-              affectedSquare.col === rootSquare.col)) {
-              this.addPieceToSquare(piece, s2);
-              this.markAffectedSquares(affectedSquares);
-              this.addPieceToSquare(this.getRandomPiece(), s1);
-              affectedSquares = this.getAffectedSquaresOnPieceMove(piece, s1, rootSquare)
-              this.markAffectedSquares(affectedSquares);
-              console.log([s2, s1, rootSquare]);
-              console.log(this.board);
-              return;
-            }
-          }
-        }
-      }
-    }
+    this.placePieceAroundSquare(piece, rootSquare, distanceToRoot);
     return;
 
     /*
