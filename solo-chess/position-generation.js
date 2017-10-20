@@ -42,7 +42,8 @@ const arrToFen = (arr) => {
 
 function generatePosition(numOfPieces) {
   const game = new SoloChessGame(numOfPieces);
-  return game.generateSolution();
+  const solution = game.generateSolution();
+  return solution;
 }
 
 class SoloChessGame {
@@ -96,10 +97,10 @@ class SoloChessGame {
   }
 
   /**
-   * check if a piece is in pawn promotion state
+   * check if the board is in pawn promotion state
    */
-  isPawnPromotion(piece, square) {
-    return piece === PAWN && square.row < 2;
+  isPawnPromotion() {
+    return this.board[0].includes(PAWN) || this.board[1].includes(PAWN);
   }
 
   getReachableSquaresOfPiece(piece, square) {
@@ -123,7 +124,7 @@ class SoloChessGame {
    * get the affected squares on piece move
    */
   getAffectedSquaresOnPieceMove(piece, fromSquare, toSquare) {
-    let affectedSquares = [];
+    const affectedSquares = [];
     //scan all the squares along the lines between fromSquare and toSquare
     //only perform the scan when the piece is queen, bishop or rook
     if ([QUEEN, BISHOP, ROOK].includes(piece)) {
@@ -169,25 +170,9 @@ class SoloChessGame {
   getAvailableSourceSquaresForPlacement(piece, square) {
     //special treatment for pawn, we just place pawn below the square
     let squares = [];
-    if (piece === PAWN) {
-      const sourceSquare = [{
-        row: square.row + 1,
-        col: square.col
-      }];
-      //make sure the source square is still inside board
-      //also not in pawn promotion
-      //and this square is an empty square
-      if (sourceSquare.row > 1 && sourceSquare.row <= 7 &&
-        !this.isPawnPromotion(piece, sourceSquare) &&
-        this.board[sourceSquare.row][sourceSquare.col] === '-') {
-        squares.push(sourceSquare);
-      }
-    } else {
-      //we should make sure the square is an empty square
-      squares = this.getReachableSquaresOfPiece(piece, square)
-        .filter(reachableSquare => this.board[reachableSquare.row][reachableSquare.col] === '-');
-    }
-
+    //we should make sure the square is an empty square
+    squares = this.getReachableSquaresOfPiece(piece, square)
+      .filter(reachableSquare => this.board[reachableSquare.row][reachableSquare.col] === '-');
     return squares;
   }
 
@@ -201,14 +186,9 @@ class SoloChessGame {
       for (let i = 0; i < sourceSquares.length; i += 1) {
         const s2 = sourceSquares[i];
         if (distance === 1) {
-          const possibleFromSquare = this.getAvailableSourceSquaresForPlacement(piece, toSquare);
-          if (possibleFromSquare.some(possibleFromSquare =>
-            possibleFromSquare.row === s2.row &&
-            possibleFromSquare.col === s2.col)) {
-            this.addPieceToSquare(piece, s2);
-            let affectedSquares = this.getAffectedSquaresOnPieceMove(piece, s2, toSquare);
-            this.markAffectedSquares(affectedSquares);
-          }
+          this.addPieceToSquare(piece, s2);
+          const affectedSquares = this.getAffectedSquaresOnPieceMove(piece, s2, toSquare);
+          this.markAffectedSquares(affectedSquares);
           //add capture information
           const from = s2;
           const to = toSquare;
@@ -222,22 +202,22 @@ class SoloChessGame {
           for (let j = 0; j < sourceSquares.length; j += 1) {
             if (i !== j) {
               const s1 = sourceSquares[j];
-              const possibleFromSquare = this.getAvailableSourceSquaresForPlacement(piece, s1);
+              const possibleFromSquares = this.getAvailableSourceSquaresForPlacement(piece, s1);
 
-              if (possibleFromSquare.some(possibleFromSquare =>
+              if (possibleFromSquares.some(possibleFromSquare =>
                 possibleFromSquare.row === s2.row &&
                 possibleFromSquare.col === s2.col)) {
                 //special case:
                 //make sure the toSquare does not sit in between s1 and s2
                 let affectedSquares = this.getAffectedSquaresOnPieceMove(piece, s2, s1);
-                if (!affectedSquares.some(
-                  affectedSquare =>
+                if (!affectedSquares.some(affectedSquare =>
                   affectedSquare.row === toSquare.row &&
                   affectedSquare.col === toSquare.col)) {
                   this.addPieceToSquare(piece, s2);
                   this.markAffectedSquares(affectedSquares);
-                  this.addPieceToSquare(this.getRandomPiece(), s1);
-                  affectedSquares = this.getAffectedSquaresOnPieceMove(piece, s1, toSquare)
+                  const s1Piece = this.getRandomPiece();
+                  this.addPieceToSquare(s1Piece, s1);
+                  affectedSquares = this.getAffectedSquaresOnPieceMove(piece, s1, toSquare);
                   this.markAffectedSquares(affectedSquares);
                   //add capture information
                   this.solution.captures.push({
@@ -299,33 +279,28 @@ class SoloChessGame {
     this.numOfPiecesOnBoard += 1;
   }
 
-  generateSolutionWithRootPiece(rootPiece, rootSquare, numOfPieces, hasKing) {
-    return solution;
-  }
-
   generateSolution() {
     for (let round = 1; round <= 100; round += 1) {
       this.solution = {};
       this.solution.captures = [];
       this.clear();
-      let rootPiece = this.getRandomPiece();
+      const rootPiece = this.getRandomPiece(); //we simply exclude pawn here!
       const piecePower = round;
-      let rootSquare = this.getRandomSquare(piecePower);
-      this.addPieceToSquare(rootPiece + '*', rootSquare); //root
+      const rootSquare = this.getRandomSquare(piecePower);
+      this.addPieceToSquare(rootPiece, rootSquare); //root
 
       for (let t = 1; t <= 500; t += 1) {
         const piece = this.getRandomPiece(piecePower + t);
         const numOfMovements = 1 + Math.floor(Math.random() * 2);
         this.placePieceAroundSquare(piece, rootSquare, numOfMovements);
-        if (this.numOfPiecesOnBoard === this.numOfPieces) {
-          console.log('found solution');
-          console.log(this.board);
+        if (this.numOfPiecesOnBoard === this.numOfPieces && !this.isPawnPromotion()) {
           this.solution.fen = arrToFen(this.board);
           this.addSolutionToCache({
             numOfPieces: this.numOfPieces,
             fen: this.solution.fen,
             encodedCaptures: this.getEncodedCaptures(this.solution.captures)
           });
+          console.log(this.board);
           return this.solution;
         }
       }
