@@ -293,8 +293,10 @@ class SoloChessGame {
       this.addPieceToSquare(rootPiece, rootSquare); //root
 
       for (let t = 1; t <= 500; t += 1) {
-        const piece = this.getRandomPiece(piecePower + t);
         const numOfMovements = 1 + Math.floor(Math.random() * 2);
+        //the last piece is king
+        const piece = (this.numOfPiecesOnBoard === this.numOfPieces - numOfMovements) ?
+          KING: this.getRandomPiece(piecePower + t);
         this.placePieceAroundSquare(piece, rootSquare, numOfMovements);
         if (this.numOfPiecesOnBoard === this.numOfPieces && !this.isPawnPromotion()) {
           this.solution.fen = arrToFen(this.board);
@@ -303,6 +305,8 @@ class SoloChessGame {
             fen: this.solution.fen,
             encodedCaptures: this.getEncodedCaptures(this.solution.captures)
           });
+          console.log(this.solution.captures);
+          console.log(this.board);
           return this.solution;
         }
       }
