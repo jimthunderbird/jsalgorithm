@@ -322,11 +322,13 @@ class SoloChessGame {
     const rootSquare = this.getRandomSquare();
     this.addPieceToSquare(rootPiece + '*', rootSquare); //root
     let piece;
-    for (;;) {
+    for (let t = 1; t <= 1000; t += 1) {
       piece = this.getRandomPiece();
-      this.placePieceAroundSquare(piece, rootSquare, 1); //1 moves
+      const numOfMovements = 1 + Math.floor(Math.random() * 2);
+      console.log(`consecutive moves: ${numOfMovements}`);
+      this.placePieceAroundSquare(piece, rootSquare, numOfMovements);
       console.log(this.numOfPiecesOnBoard);
-      if (this.numOfPiecesOnBoard >= 20) {
+      if (this.numOfPiecesOnBoard >= this.numOfPieces) {
         console.log(this.board);
         break;
       }
@@ -446,4 +448,4 @@ class SoloChessGame {
 }
 
 /////////////////////// Main ///////////////////////////
-generatePosition(4);
+generatePosition(5);
