@@ -74,7 +74,6 @@ class SoloChessGame {
   clear() {
     this.board = this.getEmptyBoard();
     this.numOfPiecesOnBoard = 0;
-    this.pieceInfoMap = [];
   }
 
   addSolutionToCache(solution) {
@@ -210,7 +209,14 @@ class SoloChessGame {
             let affectedSquares = this.getAffectedSquaresOnPieceMove(piece, s2, toSquare);
             this.markAffectedSquares(affectedSquares);
           }
-          console.log([s2, toSquare]);
+          //add capture information
+          const from = s2;
+          const to = toSquare;
+          this.solution.captures.push({
+            piece,
+            from,
+            to
+          });
           return;
         } else if (distance === 2) {
           for (let j = 0; j < sourceSquares.length; j += 1) {
@@ -233,7 +239,17 @@ class SoloChessGame {
                   this.addPieceToSquare(this.getRandomPiece(), s1);
                   affectedSquares = this.getAffectedSquaresOnPieceMove(piece, s1, toSquare)
                   this.markAffectedSquares(affectedSquares);
-                  console.log([s2, s1, toSquare]);
+                  //add capture information
+                  this.solution.captures.push({
+                    piece,
+                    from: s2,
+                    to: s1
+                  });
+                  this.solution.captures.push({
+                    piece,
+                    from: s1,
+                    to: toSquare
+                  });
                   return;
                 }
               }
@@ -246,21 +262,36 @@ class SoloChessGame {
 
   /**
    * get a random piece
-   * note: we exclude kings here
+   * we optionally pass in piece power
    */
-  getRandomPiece() {
-    const availablePcs = [KNIGHT, QUEEN, PAWN, ROOK, BISHOP];
+  getRandomPiece(piecePower = 1) {
+    let availablePcs = [KNIGHT, QUEEN, PAWN, ROOK, BISHOP];
+    if (piecePower > 10) {
+      availablePcs = [QUEEN, ROOK, BISHOP, KNIGHT];
+    } else if (piecePower > 20) {
+      availablePcs = [QUEEN, BISHOP, KNIGHT];
+    }
     return availablePcs[Math.floor(Math.random() * availablePcs.length)];
   }
 
   /**
    * get a random square
+   * with higher piece power, we generate close-to-center squares
    */
-  getRandomSquare() {
-    return {
-      row: Math.floor(Math.random() * 8),
-      col: Math.floor(Math.random() * 8)
-    };
+  getRandomSquare(piecePower) {
+    let square;
+    if (piecePower > 10) {
+      square = {
+        row: 2 + Math.floor(Math.random() * 4),
+        col: 2 + Math.floor(Math.random() * 4)
+      };
+    } else {
+      square = {
+        row: Math.floor(Math.random() * 8),
+        col: Math.floor(Math.random() * 8)
+      };
+    }
+    return square;
   }
 
   addPieceToSquare(piece, square) {
@@ -269,183 +300,38 @@ class SoloChessGame {
   }
 
   generateSolutionWithRootPiece(rootPiece, rootSquare, numOfPieces, hasKing) {
-    const solution = {};
-    solution.lastPiece = rootPiece;
-    solution.valid = true;
-
-    let piece;
-
-    //first, add all child pieces
-    for (let i = 0; i < numOfPieces - 1; i += 1) {
-      let placementSuccess = false;
-      for (let it = 1; it <= 200; it += 1) { //it means inner trys
-        //when this tree has king and this node is the last node in the tree
-        //this node is the very last piece
-        if (i === numOfPieces - 2 && hasKing) {
-          piece = this.lastPiece;
-        } else {
-          piece = this.getRandomPiece();
-        }
-        const result = this.placePieceAroundSquare(piece, rootSquare);
-        if (result.success) {
-          const from = result.square;
-          const to = rootSquare;
-          placementSuccess = true;
-          solution.lastPiece = piece;
-          //now generate the capture
-          this.solution.captures.push({
-            piece,
-            from,
-            to
-          });
-          break;
-        }
-      }
-      if (!placementSuccess) {
-        solution.valid = false;
-        break;
-      }
-    }
-
     return solution;
   }
 
   generateSolution() {
-    this.solution = {};
-    this.solution.captures = [];
-    //just do some random fun stuffs here
-    //randomly generate a root piece and square
-    this.board = this.getEmptyBoard();
-    this.numOfPiecesOnBoard = 0;
-    this.solution.valid = false;
-    const rootPiece = this.getRandomPiece();
-    const rootSquare = this.getRandomSquare();
-    this.addPieceToSquare(rootPiece + '*', rootSquare); //root
-    let piece;
-    for (let t = 1; t <= 1000; t += 1) {
-      piece = this.getRandomPiece();
-      const numOfMovements = 1 + Math.floor(Math.random() * 2);
-      console.log(`consecutive moves: ${numOfMovements}`);
-      this.placePieceAroundSquare(piece, rootSquare, numOfMovements);
-      console.log(this.numOfPiecesOnBoard);
-      if (this.numOfPiecesOnBoard >= this.numOfPieces) {
-        console.log(this.board);
-        break;
-      }
-    }
-    return;
-
-    /*
-    this.solution = {};
-    for (let t = 1; t <= 1000; t += 1) { //t means outer trys
+    for (let round = 1; round <= 100; round += 1) {
+      this.solution = {};
       this.solution.captures = [];
       this.clear();
+      let rootPiece = this.getRandomPiece();
+      const piecePower = round;
+      let rootSquare = this.getRandomSquare(piecePower);
+      this.addPieceToSquare(rootPiece + '*', rootSquare); //root
 
-      this.hasKing = Math.round(Math.random()); //will this solution contains king?
-
-    //divide all pieces among 2 trees
-      const numOfPieces1 = 1 + Math.floor(Math.random() * (this.numOfPieces - 1));
-      const numOfPieces2 = this.numOfPieces - numOfPieces1;
-
-      let rootSquare;
-      let rootPiece;
-      let nextRootPiece;
-      let nextRootSquare;
-      let reachableSquares;
-
-      for (;;) {
-    //generate the root piece and square
-    //the first tree does not have king
-        rootPiece = this.getRandomPiece();
-        rootSquare = this.getRandomSquare();
-
-    //now pre-determine the last piece
-        if (this.hasKing) { //if we have king, last piece will always be king
-          this.lastPiece = KING;
-        } else {
-          this.lastPiece = this.getRandomPiece();
-        }
-
-    //the second tree might have king
-    //generate the next root piece, this piece will not move
-    //special case, if the tree has just one piece
-    //the next root piece will just be the last piece
-        if (numOfPieces2 === 1 && this.hasKing) {
-          nextRootPiece = this.lastPiece;
-        } else { //otherwise, just randomly generate a piece for the next root
-          nextRootPiece = this.getRandomPiece();
-        }
-
-    //we need to make sure the last piece can reach root square from the next root square
-        reachableSquares = this.getReachableSquaresOfPiece(this.lastPiece, rootSquare);
-
-        if (reachableSquares.length > 0 &&
-          rootPiece !== PAWN &&
-          nextRootPiece !== PAWN) {
-          nextRootSquare = reachableSquares[
-            Math.floor(Math.random() * reachableSquares.length)
-          ];
-
-          break;
-        }
-      }
-
-    //now we have the root piece, add it first
-      this.addPieceToSquare(rootPiece, rootSquare);
-
-    //the first tree will not have king
-      const solution1 = this.generateSolutionWithRootPiece(
-        rootPiece,
-        rootSquare,
-        numOfPieces1,
-        false);
-    //the second tree might have king
-      const solution2 = this.generateSolutionWithRootPiece(
-        nextRootPiece,
-        nextRootSquare,
-        numOfPieces2, this.hasKing);
-
-    //make sure both solutions are ok
-    //and we can really add next root piece into the board
-      if (solution1.valid &&
-        solution2.valid &&
-        this.board[nextRootSquare.row][nextRootSquare.col] === '-'
-      ) {
-    //now we can safely add the next root
-        this.addPieceToSquare(nextRootPiece, nextRootSquare);
-
-    //now we have both next root piece and the root piece, add the capture information
-    //simply record capture from next root node to the first root node
-        this.solution.captures.push({
-          piece: solution2.lastPiece,
-          from: nextRootSquare,
-          to: rootSquare
-        });
-
-        this.solution.fen = arrToFen(this.board);
-
+      for (let t = 1; t <= 500; t += 1) {
+        const piece = this.getRandomPiece(piecePower + t);
+        const numOfMovements = 1 + Math.floor(Math.random() * 2);
+        this.placePieceAroundSquare(piece, rootSquare, numOfMovements);
         if (this.numOfPiecesOnBoard === this.numOfPieces) {
-          this.maxNumOfpiecesOnBoard = this.numOfPiecesOnBoard;
-    //now this solution is good, add it to the solution cache
+          console.log('found solution');
+          console.log(this.board);
+          this.solution.fen = arrToFen(this.board);
           this.addSolutionToCache({
             numOfPieces: this.numOfPieces,
             fen: this.solution.fen,
             encodedCaptures: this.getEncodedCaptures(this.solution.captures)
           });
-          break;
-        } else if (this.numOfPiecesOnBoard > this.maxNumOfpiecesOnBoard) {
-          this.maxNumOfpiecesOnBoard = this.numOfPiecesOnBoard;
+          return this.solution;
         }
       }
     }
-
-    console.log(this.board);
-    console.log(this.numOfPiecesOnBoard);
-    console.log(this.getEncodedCaptures(this.solution.captures));
-    return this.solution;
-    */
   }
 }
 
 /////////////////////// Main ///////////////////////////
-generatePosition(5);
+generatePosition(20);
