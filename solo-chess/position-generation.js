@@ -200,29 +200,43 @@ class SoloChessGame {
     if (sourceSquares.length >= distance) {
       sourceSquares = shuffleArr(sourceSquares);
       for (let i = 0; i < sourceSquares.length; i += 1) {
-        for (let j = i + 1; j < sourceSquares.length; j += 1) {
-          const s2 = sourceSquares[i];
-          const s1 = sourceSquares[j];
-          const possibleFromSquare = this.getAvailableSourceSquaresForPlacement(piece, s1);
-
+        const s2 = sourceSquares[i];
+        if (distance === 1) {
+          const possibleFromSquare = this.getAvailableSourceSquaresForPlacement(piece, toSquare);
           if (possibleFromSquare.some(possibleFromSquare =>
             possibleFromSquare.row === s2.row &&
             possibleFromSquare.col === s2.col)) {
-            //special case:
-            //make sure the root square does not sit in between s1 and s2
-            let affectedSquares = this.getAffectedSquaresOnPieceMove(piece, s2, s1);
-            if (!affectedSquares.some(
-              affectedSquare =>
-              affectedSquare.row === toSquare.row &&
-              affectedSquare.col === toSquare.col)) {
-              this.addPieceToSquare(piece, s2);
-              this.markAffectedSquares(affectedSquares);
-              this.addPieceToSquare(this.getRandomPiece(), s1);
-              affectedSquares = this.getAffectedSquaresOnPieceMove(piece, s1, toSquare)
-              this.markAffectedSquares(affectedSquares);
-              console.log([s2, s1, toSquare]);
-              console.log(this.board);
-              return;
+            this.addPieceToSquare(piece, s2);
+            let affectedSquares = this.getAffectedSquaresOnPieceMove(piece, s2, toSquare);
+            this.markAffectedSquares(affectedSquares);
+          }
+          console.log([s2, toSquare]);
+          return;
+        } else if (distance === 2) {
+          for (let j = 0; j < sourceSquares.length; j += 1) {
+            if (i !== j) {
+              const s1 = sourceSquares[j];
+              const possibleFromSquare = this.getAvailableSourceSquaresForPlacement(piece, s1);
+
+              if (possibleFromSquare.some(possibleFromSquare =>
+                possibleFromSquare.row === s2.row &&
+                possibleFromSquare.col === s2.col)) {
+                //special case:
+                //make sure the toSquare does not sit in between s1 and s2
+                let affectedSquares = this.getAffectedSquaresOnPieceMove(piece, s2, s1);
+                if (!affectedSquares.some(
+                  affectedSquare =>
+                  affectedSquare.row === toSquare.row &&
+                  affectedSquare.col === toSquare.col)) {
+                  this.addPieceToSquare(piece, s2);
+                  this.markAffectedSquares(affectedSquares);
+                  this.addPieceToSquare(this.getRandomPiece(), s1);
+                  affectedSquares = this.getAffectedSquaresOnPieceMove(piece, s1, toSquare)
+                  this.markAffectedSquares(affectedSquares);
+                  console.log([s2, s1, toSquare]);
+                  return;
+                }
+              }
             }
           }
         }
@@ -308,10 +322,15 @@ class SoloChessGame {
     const rootSquare = this.getRandomSquare();
     this.addPieceToSquare(rootPiece + '*', rootSquare); //root
     let piece;
-    piece = this.getRandomPiece();
-    //construct a consecutive move, s2->s1->root
-    const distanceToRoot = 2; //this is the number of consecutive moves to the root
-    this.placePieceAroundSquare(piece, rootSquare, distanceToRoot);
+    for (;;) {
+      piece = this.getRandomPiece();
+      this.placePieceAroundSquare(piece, rootSquare, 1); //1 moves
+      console.log(this.numOfPiecesOnBoard);
+      if (this.numOfPiecesOnBoard >= 20) {
+        console.log(this.board);
+        break;
+      }
+    }
     return;
 
     /*
