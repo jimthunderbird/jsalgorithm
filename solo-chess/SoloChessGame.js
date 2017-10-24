@@ -1,3 +1,48 @@
+const JCE = require('../jsChessEngine/bin/JCE.js');
+
+const { PAWN, KNIGHT, BISHOP, ROOK, QUEEN, KING } = {
+  PAWN: 'P',
+  KNIGHT: 'N',
+  BISHOP: 'B',
+  ROOK: 'R',
+  QUEEN: 'Q',
+  KING: 'K'
+};
+
+const MAX_NUM_OF_MOVES_PER_PIECE = 2;
+
+const shuffleArr = (arr) => {
+  for (let i = arr.length - 1; i > 0; i -= 1) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [arr[i], arr[j]] = [arr[j], arr[i]];
+  }
+  return arr;
+};
+
+const arrToFen = (arr) => {
+  const pieces = arr.map((row) => {
+    let strRow = '';
+    let counter = 0;
+    row.forEach((square) => {
+      //- means empty square, * means "empty but unavailable square"
+      if (square === '-' || square === '*') {
+        counter += 1;
+      } else {
+        if (counter !== 0) {
+          strRow += counter;
+          counter = 0;
+        }
+        strRow += square;
+      }
+    });
+    strRow += (counter !== 0) ? counter : '';
+    return strRow;
+  }).join('/');
+
+  return `${pieces}`;
+};
+
+
 class SolutionCache {
   constructor() {
     this.cache = {};
@@ -317,3 +362,6 @@ class SoloChessGame {
     return this.solution;
   }
 }
+
+const game = new SoloChessGame();
+console.log(game.generateSolution(10));
