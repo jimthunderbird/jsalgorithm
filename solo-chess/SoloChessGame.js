@@ -1,3 +1,36 @@
+class SolutionCache {
+  constructor() {
+    this.cache = {};
+    this.sizePerSlot = 5;
+  }
+
+  addSolution(solution) {
+    const numOfPieces = solution.numOfPieces;
+    if (this.cache[numOfPieces] === undefined) {
+      this.cache[numOfPieces] = [];
+    }
+
+    if (this.cache[numOfPieces].length < this.sizePerSlot) {
+      this.cache[numOfPieces].push({
+        fen: solution.fen,
+        encodedCaptures: solution.encodedCaptures
+      });
+    }
+  }
+
+  getSolution(numOfPieces) {
+    let solution;
+    for (let n = numOfPieces; n >= 1; n -= 1) {
+      if (this.cache[n] !== undefined && this.cache[n].length > 0) {
+        const index = Math.floor(Math.random() * this.cache[n].length);
+        solution = this.cache[n][index];
+        break;
+      }
+    }
+    return solution;
+  }
+}
+
 class SoloChessGame {
   constructor() {
     //cache to store the reachable squares for each piece and square combo
