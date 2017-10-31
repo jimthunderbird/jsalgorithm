@@ -343,10 +343,12 @@ class SoloChessGame {
         this.placePieceAroundSquare(piece, rootSquare, numOfMovements);
         //compute the fen string
         const fen = arrToFen(this.board);
+        const board = JSON.parse(JSON.stringify(this.board));
         if (this.numOfPiecesOnBoard === numOfPieces &&
           !this.isPawnPromotion() &&
           this.allCapturesAreValid(this.solution.captures)) {
           this.solution.fen = fen;
+          this.solution.board = board;
           this.solutionCache.addSolution({
             encodedCaptures: this.getEncodedCaptures(this.solution.captures),
             fen,
@@ -364,4 +366,6 @@ class SoloChessGame {
 }
 
 const game = new SoloChessGame();
-console.log(game.generateSolution(10));
+const solution = game.generateSolution(10);
+console.log(solution.board);
+console.log(solution.captures);
